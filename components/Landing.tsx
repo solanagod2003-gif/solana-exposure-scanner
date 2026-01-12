@@ -8,11 +8,18 @@ const Landing: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  // Demo wallet - a known active Solana wallet for demonstration
+  const DEMO_WALLET = '7Vbmv1jt4vyuqBZcpYPpnVhrqVe5e6ZPb6JxDcffRHUM';
+
   const EXAMPLE_WALLETS = [
-    { name: 'Ansem', address: '8k9f...M5uH', actual: '8k9fM5uH8P8P8P8P8P8P8P8P8P8P8P8P8P8P8P8P' },
-    { name: 'Toly', address: '7m8v...Q4pR', actual: '7m8vQ4pR7P7P7P7P7P7P7P7P7P7P7P7P7P7P7P7P' },
-    { name: 'Whale', address: 'vW1A...9zK2', actual: 'vW1A9zK2vW1A9zK2vW1A9zK2vW1A9zK2vW1A9zK2' }
+    { name: 'Whale', address: '7Vbm...RHUM', actual: '7Vbmv1jt4vyuqBZcpYPpnVhrqVe5e6ZPb6JxDcffRHUM' },
+    { name: 'Trader', address: 'DYw8...4ESV', actual: 'DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5C4ESV' },
+    { name: 'Degen', address: '5Q54...4j1', actual: '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1' }
   ];
+
+  const handleDemoScan = () => {
+    navigate(`/scan/${DEMO_WALLET}`);
+  };
 
   const validateAddress = (val: string) => {
     if (!val) return 'Address is required';
@@ -193,9 +200,25 @@ const Landing: React.FC = () => {
 
       <motion.div
         variants={itemVariants}
+        className="flex flex-wrap justify-center items-center gap-6 mb-8"
+      >
+        <motion.button
+          type="button"
+          onClick={handleDemoScan}
+          className="px-8 py-4 bg-gradient-to-r from-solana-green to-solana-purple rounded-2xl font-black text-lg uppercase tracking-widest text-white shadow-2xl"
+          whileHover={{ scale: 1.05, boxShadow: "0 20px 60px rgba(20, 241, 149, 0.4)" }}
+          whileTap={{ scale: 0.95 }}
+        >
+          🚀 Try Demo Wallet
+        </motion.button>
+        <span className="text-muted-foreground text-sm">No wallet address? See it in action first!</span>
+      </motion.div>
+
+      <motion.div
+        variants={itemVariants}
         className="flex flex-wrap justify-center items-center gap-6 mb-24"
       >
-        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-50">Degen Examples:</span>
+        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-50">Or try these:</span>
         {EXAMPLE_WALLETS.map((w, i) => (
           <motion.button
             key={w.name}
