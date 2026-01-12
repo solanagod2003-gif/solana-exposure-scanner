@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-  ShieldAlert, 
-  ChevronDown, 
-  Search, 
-  Target, 
-  TrendingDown, 
-  Activity, 
-  User, 
+import {
+  ShieldAlert,
+  ChevronDown,
+  Search,
+  Target,
+  TrendingDown,
+  Activity,
+  User,
   Link as LinkIcon,
   AlertCircle,
   ExternalLink,
@@ -18,6 +18,7 @@ import {
 import { ExposureData } from '../types/api';
 import { cn } from '../lib/utils';
 import Tooltip from './Tooltip';
+import ClusteringGraph from './ClusteringGraph';
 
 interface RiskSectionProps {
   data: ExposureData;
@@ -30,18 +31,18 @@ const RiskSection: React.FC<RiskSectionProps> = ({ data }) => {
     setOpenItem(openItem === id ? null : id);
   };
 
-  const AccordionItem = ({ 
-    id, 
-    title, 
-    icon: Icon, 
-    children, 
+  const AccordionItem = ({
+    id,
+    title,
+    icon: Icon,
+    children,
     badge,
     tooltipContent
-  }: { 
-    id: string; 
-    title: string; 
-    icon: any; 
-    children: React.ReactNode; 
+  }: {
+    id: string;
+    title: string;
+    icon: any;
+    children: React.ReactNode;
     badge?: string;
     tooltipContent?: string;
   }) => {
@@ -92,30 +93,30 @@ const RiskSection: React.FC<RiskSectionProps> = ({ data }) => {
 
   return (
     <div className="bg-secondary/10 border border-border rounded-[2.5rem] overflow-hidden">
-      <AccordionItem 
-        id="identity" 
-        title="Identity Leakage" 
+      <AccordionItem
+        id="identity"
+        title="Identity Leakage"
         icon={User}
         badge="Dox Check"
         tooltipContent="Explains why having a public address tied to your social profile is dangerous: it enables targetted harassment and social engineering."
       >
         <div className="space-y-6">
           <p className="text-muted-foreground text-sm leading-relaxed max-w-2xl font-medium">
-            If your address was ever posted publicly on social media or linked to a name service (SNS), 
+            If your address was ever posted publicly on social media or linked to a name service (SNS),
             automated bots have already indexed it. <span className="text-foreground">Selective privacy like encrypt.trade allows you to trade without linking back to these public IDs.</span>
           </p>
           <div className="flex flex-wrap gap-4">
-            <a 
-              href={data.links.xSearch} 
-              target="_blank" 
+            <a
+              href={data.links.xSearch}
+              target="_blank"
               className="flex items-center gap-2 px-4 py-2 bg-black border border-white/10 rounded-xl hover:border-solana-purple/50 transition-all text-xs font-bold"
             >
               <Search className="w-4 h-4 text-solana-purple" />
               Check X History
             </a>
-            <a 
-              href={data.links.arkham} 
-              target="_blank" 
+            <a
+              href={data.links.arkham}
+              target="_blank"
               className="flex items-center gap-2 px-4 py-2 bg-black border border-white/10 rounded-xl hover:border-solana-purple/50 transition-all text-xs font-bold"
             >
               <Target className="w-4 h-4 text-solana-purple" />
@@ -125,9 +126,9 @@ const RiskSection: React.FC<RiskSectionProps> = ({ data }) => {
         </div>
       </AccordionItem>
 
-      <AccordionItem 
-        id="financial" 
-        title="Financial Profile" 
+      <AccordionItem
+        id="financial"
+        title="Financial Profile"
         icon={DollarSign}
         badge="Portfolio"
         tooltipContent="Shows how much of your wealth is visible. High visibility increases the risk of being targeted by exploiters."
@@ -157,16 +158,16 @@ const RiskSection: React.FC<RiskSectionProps> = ({ data }) => {
         </div>
       </AccordionItem>
 
-      <AccordionItem 
-        id="clustering" 
-        title="Clustering & Network" 
+      <AccordionItem
+        id="clustering"
+        title="Clustering & Network"
         icon={LinkIcon}
         badge="Connections"
         tooltipContent="Analyzes the 'crowd' you belong to. Clustering helps attackers guess your physical location or real-world identity via common touchpoints."
       >
         <div className="space-y-4">
           <p className="text-muted-foreground text-sm">
-            You have interacted with <span className="text-foreground font-bold">{data.clustering.interactedCount}</span> unique addresses. 
+            You have interacted with <span className="text-foreground font-bold">{data.clustering.interactedCount}</span> unique addresses.
             Behavioral clustering links you to these top nodes:
           </p>
           <div className="grid gap-2">
@@ -180,15 +181,32 @@ const RiskSection: React.FC<RiskSectionProps> = ({ data }) => {
             ))}
           </div>
           <div className="mt-4 p-4 rounded-xl bg-solana-green/5 border border-solana-green/10 text-[11px] text-solana-green font-bold flex gap-2">
-             <ShieldAlert className="w-4 h-4 flex-shrink-0" />
-             Encrypting swaps on encrypt.trade breaks these cluster chains, preventing you from being grouped with compromised entities.
+            <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+            Encrypting swaps on encrypt.trade breaks these cluster chains, preventing you from being grouped with compromised entities.
           </div>
         </div>
       </AccordionItem>
 
-      <AccordionItem 
-        id="risks" 
-        title="Key Risks Detected" 
+      <AccordionItem
+        id="network"
+        title="Network Visualization"
+        icon={LinkIcon}
+        badge="Graph"
+        tooltipContent="Interactive visualization of your wallet's connection network. Each link represents a permanent, public connection that can be used for cluster analysis."
+      >
+        {data.clustering.networkNodes && data.clustering.networkNodes.length > 0 ? (
+          <ClusteringGraph
+            walletAddress={data.links.solscan.split('/').pop() || 'wallet'}
+            networkNodes={data.clustering.networkNodes}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">No network data available</p>
+        )}
+      </AccordionItem>
+
+      <AccordionItem
+        id="risks"
+        title="Key Risks Detected"
         icon={ShieldAlert}
         badge={`${data.risks.length} Critical`}
         tooltipContent="Specific vulnerabilities identified by our AI scanner. These require immediate attention."
@@ -205,9 +223,9 @@ const RiskSection: React.FC<RiskSectionProps> = ({ data }) => {
         </ul>
       </AccordionItem>
 
-      <AccordionItem 
-        id="activity" 
-        title="Recent Activity" 
+      <AccordionItem
+        id="activity"
+        title="Recent Activity"
         icon={Activity}
         badge="Footprints"
         tooltipContent="Your most recent public footprints. Each entry represents data leaked to MEV bots and trackers."

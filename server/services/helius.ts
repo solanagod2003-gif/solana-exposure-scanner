@@ -1,8 +1,18 @@
 // Helius API Service
 // Provides methods to fetch Solana blockchain data
 
-const HELIUS_API_BASE = 'https://api.helius.xyz';
-const HELIUS_RPC_BASE = 'https://mainnet.helius-rpc.com';
+export type SolanaNetwork = 'mainnet' | 'devnet';
+
+const HELIUS_ENDPOINTS = {
+    mainnet: {
+        api: 'https://api.helius.xyz',
+        rpc: 'https://mainnet.helius-rpc.com'
+    },
+    devnet: {
+        api: 'https://api-devnet.helius.xyz',
+        rpc: 'https://devnet.helius-rpc.com'
+    }
+};
 
 export interface HeliusTransaction {
     signature: string;
@@ -72,19 +82,37 @@ export interface HeliusBalanceResponse {
 
 class HeliusService {
     private apiKey: string;
+    private network: SolanaNetwork;
 
-    constructor() {
+    constructor(network: SolanaNetwork = 'mainnet') {
         this.apiKey = process.env.HELIUS_API_KEY || '';
+        this.network = network;
         if (!this.apiKey) {
             console.warn('HELIUS_API_KEY not set. Helius API calls will fail.');
         }
+    }
+
+    setNetwork(network: SolanaNetwork) {
+        this.network = network;
+    }
+
+    getNetwork(): SolanaNetwork {
+        return this.network;
+    }
+
+    private get apiBase() {
+        return HELIUS_ENDPOINTS[this.network].api;
+    }
+
+    private get rpcBase() {
+        return HELIUS_ENDPOINTS[this.network].rpc;
     }
 
     /**
      * Get enhanced transaction history for an address
      */
     async getTransactionHistory(address: string, limit: number = 100): Promise<HeliusTransaction[]> {
-        const url = `${HELIUS_API_BASE}/v0/addresses/${address}/transactions?api-key=${this.apiKey}&limit=${limit}`;
+        const url = `${this.apiBase}/v0/addresses/${address}/transactions?api-key=${this.apiKey}&limit=${limit}`;
 
         const response = await fetch(url);
 
@@ -100,7 +128,7 @@ class HeliusService {
      * Get all assets owned by an address using DAS API
      */
     async getAssetsByOwner(address: string): Promise<HeliusAsset[]> {
-        const url = `${HELIUS_RPC_BASE}/?api-key=${this.apiKey}`;
+        const url = `${this.rpcBase}/?api-key=${this.apiKey}`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -141,7 +169,7 @@ class HeliusService {
      * Get native SOL balance
      */
     async getBalance(address: string): Promise<number> {
-        const url = `${HELIUS_RPC_BASE}/?api-key=${this.apiKey}`;
+        const url = `${this.rpcBase}/?api-key=${this.apiKey}`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -175,7 +203,7 @@ class HeliusService {
      * Parse specific transaction signatures
      */
     async parseTransactions(signatures: string[]): Promise<HeliusTransaction[]> {
-        const url = `${HELIUS_API_BASE}/v0/transactions?api-key=${this.apiKey}`;
+        const url = `${this.apiBase}/v0/transactions?api-key=${this.apiKey}`;
 
         const response = await fetch(url, {
             method: 'POST',

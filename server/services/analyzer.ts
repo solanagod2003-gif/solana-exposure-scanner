@@ -234,13 +234,41 @@ class ExposureAnalyzer {
             }
         }
 
-        // Get top addresses by interaction count
+        // Get top addresses by interaction count (expand to 30 for graph)
         const sorted = Array.from(addressCounts.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 10);
+            .sort((a, b) => b[1] - a[1]);
+
+        const top10 = sorted.slice(0, 10);
+        const top30 = sorted.slice(0, 30);
 
         const interactedCount = addressCounts.size;
-        const topAddresses = sorted.map(([addr]) => addr.slice(0, 8) + '...' + addr.slice(-4));
+        const topAddresses = top10.map(([addr]) => addr.slice(0, 8) + '...' + addr.slice(-4));
+
+        // Create network nodes with types for graph visualization
+        const networkNodes = top30.map(([addr, count]) => {
+            const node: any = {
+                address: addr,
+                interactions: count,
+            };
+
+            // Classify address type
+            if (CEX_ADDRESSES[addr]) {
+                node.type = 'CEX';
+                node.label = CEX_ADDRESSES[addr];
+            } else if (PROTOCOL_ADDRESSES[addr]) {
+                node.type = 'PROTOCOL';
+                node.label = PROTOCOL_ADDRESSES[addr];
+            } else if (addr.toLowerCase().includes('jupiter') || addr.toLowerCase().includes('orca') || addr.toLowerCase().includes('raydium')) {
+                node.type = 'DEX';
+                node.label = 'DEX Protocol';
+            } else if (addr.includes('pump') || addr.includes('bonk') || count > 10) {
+                node.type = 'MEMECOIN';
+            } else {
+                node.type = 'UNKNOWN';
+            }
+
+            return node;
+        });
 
         // Score: more interactions = higher clustering exposure
         let score = 0;
@@ -255,48 +283,177 @@ class ExposureAnalyzer {
             data: {
                 interactedCount,
                 topAddresses,
+                networkNodes,
             },
         };
     }
 
+
     /**
-     * Analyze identity exposure (NFTs, SNS names, etc.)
+     * Analyze identity exposure (ENHANCED - FREE using existing APIs)
      */
     private analyzeIdentity(assets: HeliusAsset[], transactions: HeliusTransaction[]) {
         let hasNFTs = false;
         let hasNamedNFTs = false;
+        let hasProfileNFT = false;
         let nftCount = 0;
+        let revealingNFTs: string[] = [];
+        let revealingTokens: string[] = [];
+        let domains: string[] = [];
 
+        // ENHANCED NFT ANALYSIS
         for (const asset of assets) {
             if (asset.interface === 'V1_NFT' || asset.interface === 'ProgrammableNFT') {
                 hasNFTs = true;
                 nftCount++;
 
-                // Check if NFT has revealing metadata
-                const name = asset.content?.metadata?.name || '';
-                if (name.includes('.sol') || name.includes('Profile') || name.toLowerCase().includes('name')) {
-                    hasNamedNFTs = true;
+                const name = (asset as any).content?.metadata?.name || '';
+                const description = (asset as any).content?.metadata?.description || '';
+                const symbol = (asset as any).content?.metadata?.symbol || '';
+                const combinedText = `${name} ${description} ${symbol}`.toLowerCase();
+
+                // Check for revealing NFT metadata
+                const revealingPatterns = [
+                    '.sol', '.abc', '.bonk', '.poor', // Domain NFTs
+                    'profile', 'pfp', 'avatar', // Profile pics
+                    'name', 'identity', 'id', // Identity tokens
+                    'membership', 'pass', 'access', // Membership tokens
+                    'verified', 'kyc', 'badge' // Verification badges
+                ];
+
+                for (const pattern of revealingPatterns) {
+                    if (combinedText.includes(pattern)) {
+                        hasNamedNFTs = true;
+                        if (pattern.includes('profile') || pattern === 'pfp' || pattern === 'avatar') {
+                            hasProfileNFT = true;
+                        }
+                        if (pattern.startsWith('.')) {
+                            domains.push(name);
+                        }
+                        revealingNFTs.push(name);
+                        break;
+                    }
+                }
+
+                // Check NFT attributes for PII
+                const attributes = (asset as any).content?.metadata?.attributes || [];
+                for (const attr of attributes) {
+                    const attrValue = String(attr.value || '').toLowerCase();
+                    if (attrValue.includes('twitter') || attrValue.includes('discord') ||
+                        attrValue.includes('telegram') || attrValue.includes('@')) {
+                        hasNamedNFTs = true;
+                        revealingNFTs.push(`${name} (has social links)`);
+                        break;
+                    }
+                }
+            }
+
+            // ENHANCED TOKEN NAME ANALYSIS
+            if (asset.token_info) {
+                const tokenName = (asset as any).token_info?.symbol || '';
+                const tokenNameLower = tokenName.toLowerCase();
+
+                // Detect revealing token names
+                const revealingTokenPatterns = [
+                    'dao', 'governance', 'vote', // DAO membership
+                    'fan', 'creator', 'community', // Fan/creator tokens
+                    'team', 'member', 'holder', // Team tokens
+                    'early', 'founder', 'genesis', // Early adopter tokens
+                    'verified', 'kyc', 'whitelist' // Verification tokens
+                ];
+
+                for (const pattern of revealingTokenPatterns) {
+                    if (tokenNameLower.includes(pattern)) {
+                        revealingTokens.push(tokenName);
+                        break;
+                    }
                 }
             }
         }
 
-        // Check for SNS-related transactions
-        const hasSNS = transactions.some(tx =>
-            tx.type === 'SNS' || tx.description?.toLowerCase().includes('.sol')
-        );
+        // ENHANCED DOMAIN DETECTION (all Solana domain services)
+        const domainPatterns = [
+            '.sol',      // Solana Name Service (main)
+            '.abc',      // AllDomains
+            '.bonk',     // Bonk domains
+            '.poor',     // Poor domains
+            '.backpack', // Backpack domains
+            '.glow',     // Glow domains
+        ];
 
-        // Score calculation
+        const hasDomains = transactions.some(tx => {
+            const desc = tx.description?.toLowerCase() || '';
+            const type = tx.type?.toLowerCase() || '';
+
+            // Check transaction description and type
+            for (const pattern of domainPatterns) {
+                if (desc.includes(pattern) || type.includes(pattern)) {
+                    // Extract domain name if possible
+                    const match = desc.match(/(\w+)(\.sol|\.abc|\.bonk|\.poor|\.backpack|\.glow)/);
+                    if (match) {
+                        domains.push(match[0]);
+                    }
+                    return true;
+                }
+            }
+
+            // Check memo fields for domains (if available)
+            if ((tx as any).events?.nft) {
+                const nftDesc = JSON.stringify((tx as any).events.nft).toLowerCase();
+                if (domainPatterns.some(p => nftDesc.includes(p))) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+
+        // TRANSACTION PATTERN ANALYSIS  
+        // Check for interactions with known entities (using Helius labels)
+        const knownEntityInteractions = transactions.filter(tx => {
+            // Helius provides source/destination info
+            const desc = tx.description?.toLowerCase() || '';
+            return desc.includes('coinbase') || desc.includes('binance') ||
+                desc.includes('kraken') || desc.includes('ftx') ||
+                desc.includes('opensea') || desc.includes('magic eden');
+        }).length;
+
+        // ENHANCED SCORING
         let score = 0;
-        if (hasNFTs) score = 25;
-        if (nftCount > 10) score = 40;
-        if (hasNamedNFTs) score = 60;
-        if (hasSNS) score = 75;
+
+        // Base NFT ownership
+        if (hasNFTs) score += 15;
+        if (nftCount > 5) score += 10;
+        if (nftCount > 20) score += 15;
+
+        // Revealing NFTs (highest risk!)
+        if (hasNamedNFTs) score += 20;
+        if (hasProfileNFT) score += 15;
+        if (revealingNFTs.length > 0) score += Math.min(revealingNFTs.length * 5, 25);
+
+        // Domain ownership (very high risk!)
+        if (hasDomains) score += 30;
+        if (domains.length > 0) score += Math.min(domains.length * 10, 40);
+
+        // Revealing tokens
+        if (revealingTokens.length > 0) score += Math.min(revealingTokens.length * 5, 20);
+
+        // Known entity interactions
+        if (knownEntityInteractions > 0) score += Math.min(knownEntityInteractions * 3, 15);
+
+        // Cap at 100
+        score = Math.min(score, 100);
 
         return {
             score,
             hasNFTs,
-            hasSNS,
+            hasSNS: hasDomains,
             nftCount,
+            hasProfileNFT,
+            revealingNFTs: revealingNFTs.slice(0, 5), // Top 5
+            revealingTokens: revealingTokens.slice(0, 5),
+            domains: domains.slice(0, 3), // Top 3 domains
+            knownEntityInteractions,
         };
     }
 

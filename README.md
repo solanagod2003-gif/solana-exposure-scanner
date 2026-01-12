@@ -1,245 +1,251 @@
 # 🔍 Solana Exposure Scanner
 
-> **Privacy Auditing Tool for Solana Wallets** - Analyze on-chain privacy exposure and identify potential KYC linkages, clustering risks, and identity correlations.
+> **Privacy Auditing Tool for Solana Wallets** — Reveal how much the blockchain knows about you. Analyze on-chain privacy exposure, identify KYC linkages, visualize wallet clustering, and learn how surveillance companies deanonymize crypto users.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/solana-exposure-scanner)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/solanagod2003-gif/solana-exposure-scanner)
 
-![Solana Exposure Scanner](https://img.shields.io/badge/Solana-Mainnet-14F195?style=for-the-badge&logo=solana)
+![Solana](https://img.shields.io/badge/Solana-Mainnet%20%7C%20Devnet-14F195?style=for-the-badge&logo=solana)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![React](https://img.shields.io/badge/React%2019-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+
+---
+
+## 🎬 Demo
+
+> Scan any Solana wallet to see its privacy exposure score, KYC links, and how easily it can be deanonymized.
+
+---
 
 ## ✨ Features
 
-- 🎯 **Real-Time Analysis** - Scan any Solana wallet address for privacy exposure
-- 🔐 **KYC Detection** - Identify direct transfers to/from centralized exchanges
-- 🕸️ **Clustering Analysis** - Detect wallet relationship patterns and interaction networks
-- 💰 **Financial Exposure** - Calculate net worth and trading activity visibility
-- 📚 **Educational Modal** - Learn about surveillance techniques, chain analysis, and real-world consequences
-- ⏱️ **Timeline Visualization** - See your transaction history with surveillance level indicators
-- 🎨 **Beautiful UI** - Modern, responsive design with dark mode
-- ⚡ **Fast & Efficient** - Powered by Helius API for instant blockchain data access
-- 🤖 **AI-Powered Insights** - Advanced pattern recognition for exposure scoring
-- 🚨 **Concrete Examples** - Specific explanations of how each transaction exposes you
+### 🎯 Core Analysis
+- **Real-Time Wallet Scanning** — Instant privacy analysis for any Solana address
+- **AI-Powered Exposure Score** — 0-100 risk assessment using pattern recognition
+- **KYC Link Detection** — Identifies transfers to/from Binance, Coinbase, Kraken, FTX, and more
+- **Clustering Analysis** — Interactive force-graph showing wallet relationship networks
+- **Financial Exposure** — Net worth calculation and trading activity visibility
+
+### 🎓 Educational Features
+- **Deanonymization Simulator** — Interactive walkthrough showing how surveillance companies trace wallets step-by-step
+- **Before/After Privacy Demo** — Visual comparison of exposed vs. encrypted transaction data
+- **Educational Modal** — Deep-dive into surveillance techniques with real-world consequences
+
+### 📊 Visualizations
+- **Timeline View** — Transaction history with surveillance level indicators
+- **Clustering Graph** — Force-directed graph of wallet interactions
+- **Exposure Gauge** — Animated score display with risk breakdown
+- **Score Breakdown** — Detailed metrics across 5 privacy dimensions
+
+### 🚀 Shareable Social Card
+- **Downloadable Image** — Generate a beautiful privacy score card for social media
+- **QR Code Integration** — Scan to instantly check any wallet
+- **One-Click Share** — Perfect for Twitter/X, Discord, and more
+
+### 🔄 Network Support
+- **Mainnet** — Real wallet analysis with actual on-chain data
+- **Devnet** — Testing environment for development and demos
+
+---
+
+## 🏗️ Architecture
+
+```
+solana-exposure-scanner/
+├── api/                      # Vercel serverless function
+│   └── index.ts              # API handler (scan, health, network)
+├── server/                   # Backend logic
+│   ├── config/               # Environment configuration
+│   ├── constants/            # Known CEX addresses, protocols
+│   ├── routes/               # Express API routes
+│   └── services/
+│       ├── helius.ts         # Helius blockchain data
+│       ├── birdeye.ts        # Birdeye PnL analytics
+│       └── analyzer.ts       # AI exposure analysis engine
+├── components/               # React components
+│   ├── Dashboard.tsx         # Main results display
+│   ├── Landing.tsx           # Home page with search
+│   ├── ClusteringGraph.tsx   # Force-directed wallet graph
+│   ├── TimelineView.tsx      # Transaction timeline
+│   ├── ShareableCard.tsx     # Social media image generator
+│   ├── DeanonymizationSimulator.tsx  # Interactive demo
+│   ├── BeforeAfterDemo.tsx   # Privacy comparison
+│   ├── EducationModal.tsx    # Surveillance education
+│   ├── ExposureGauge.tsx     # Animated score gauge
+│   ├── ScoreBreakdown.tsx    # Detailed metrics
+│   ├── RiskSection.tsx       # Risk explanations
+│   ├── PrivacySolution.tsx   # Encifher CTA
+│   └── Header.tsx            # Navigation & network toggle
+├── hooks/                    # Custom React hooks
+│   └── useWalletScan.ts      # Data fetching logic
+├── lib/                      # Utilities
+└── types/                    # TypeScript definitions
+```
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 - [Helius API Key](https://helius.dev) (free tier available)
-- [Birdeye API Key](https://birdeye.so) (optional, for enhanced PnL data)
+- [Birdeye API Key](https://birdeye.so) (optional, for PnL data)
 
 ### Local Development
 
-1. **Clone the repository**
-   \`\`\`bash
-   git clone https://github.com/yourusername/solana-exposure-scanner.git
-   cd solana-exposure-scanner
-   \`\`\`
+```bash
+# 1. Clone the repository
+git clone https://github.com/solanagod2003-gif/solana-exposure-scanner.git
+cd solana-exposure-scanner
 
-2. **Install dependencies**
-   \`\`\`bash
-   npm install
-   \`\`\`
+# 2. Install dependencies
+npm install
 
-3. **Configure environment variables**
-   \`\`\`bash
-   cp .env.example .env.local
-   \`\`\`
-   
-   Edit \`.env.local\` and add your API keys:
-   \`\`\`env
-   HELIUS_API_KEY=your_helius_api_key_here
-   BIRDEYE_API_KEY=your_birdeye_api_key_here  # Optional
-   \`\`\`
+# 3. Configure environment
+cp .env.example .env.local
+# Edit .env.local with your API keys:
+# HELIUS_API_KEY=your_key_here
+# BIRDEYE_API_KEY=your_key_here (optional)
 
-4. **Start development servers**
-   \`\`\`bash
-   # Start both frontend and backend
-   npm run dev:all
-   
-   # Or start separately:
-   npm run dev          # Frontend only (port 3000)
-   npm run dev:server   # Backend only (port 3001)
-   \`\`\`
+# 4. Start development servers
+npm run dev:all    # Both frontend (3000) + backend (3001)
 
-5. **Open your browser**
-   
-   Navigate to [http://localhost:3000](http://localhost:3000)
+# Or separately:
+npm run dev        # Frontend only
+npm run dev:server # Backend only
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
 
 ## 🌐 Deploy to Vercel
 
 ### One-Click Deploy
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/solana-exposure-scanner)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/solanagod2003-gif/solana-exposure-scanner)
 
 ### Manual Deployment
 
-1. **Install Vercel CLI**
-   \`\`\`bash
-   npm i -g vercel
-   \`\`\`
+```bash
+# Install Vercel CLI
+npm i -g vercel
 
-2. **Deploy**
-   \`\`\`bash
-   vercel
-   \`\`\`
+# Deploy (follow prompts)
+vercel
 
-3. **Set Environment Variables**
-   
-   In your Vercel dashboard, add:
-   - \`HELIUS_API_KEY\` - Your Helius API key
-   - \`BIRDEYE_API_KEY\` - Your Birdeye API key (optional)
+# Set environment variables in Vercel dashboard:
+# - HELIUS_API_KEY
+# - BIRDEYE_API_KEY (optional)
 
-4. **Redeploy**
-   \`\`\`bash
-   vercel --prod
-   \`\`\`
+# Deploy to production
+vercel --prod
+```
 
-## 📖 How It Works
+---
 
-The Solana Exposure Scanner analyzes wallet privacy across five key dimensions:
+## 📊 How Exposure is Calculated
 
-### 1. **KYC Links** (30% weight)
-- Detects transfers to/from known CEX addresses (Binance, Coinbase, Kraken, etc.)
-- Identifies potential identity linkage through KYC platforms
+The scanner analyzes wallets across **5 dimensions**:
 
-### 2. **Clustering** (25% weight)
-- Analyzes wallet interaction patterns
-- Identifies frequently interacted addresses
-- Detects potential wallet ownership clusters
+| Dimension | Weight | What It Measures |
+|-----------|--------|------------------|
+| **KYC Links** | 30% | Transfers to/from centralized exchanges with identity requirements |
+| **Clustering** | 25% | Wallet interaction patterns that reveal ownership relationships |
+| **Activity** | 20% | Transaction frequency, timing patterns, behavioral fingerprints |
+| **Financial** | 15% | Net worth, portfolio size, trading volume visibility |
+| **Identity** | 10% | SNS domains, NFT metadata, on-chain identity markers |
 
-### 3. **Activity Patterns** (20% weight)
-- Transaction frequency analysis
-- Historical activity fingerprinting
-- Behavioral pattern detection
-
-### 4. **Financial Exposure** (15% weight)
-- Net worth calculation
-- Portfolio visibility assessment
-- Trading activity exposure
-
-### 5. **Identity Metadata** (10% weight)
-- SNS domain ownership detection
-- NFT metadata analysis
-- On-chain identity markers
-
-## 🏗️ Architecture
-
-\`\`\`
-solana-exposure-scanner/
-├── api/                    # Vercel serverless functions
-│   └── index.ts           # API handler
-├── server/                # Backend logic
-│   ├── config/           # Environment configuration
-│   ├── routes/           # API routes
-│   ├── services/         # External API services
-│   │   ├── helius.ts    # Helius blockchain data
-│   │   ├── birdeye.ts   # Birdeye PnL data
-│   │   └── analyzer.ts  # Exposure analysis engine
-│   └── constants/        # Known addresses (CEX, protocols)
-├── components/           # React components
-├── hooks/               # Custom React hooks
-├── lib/                # Utility functions
-└── types/              # TypeScript definitions
-\`\`\`
+---
 
 ## 🔧 Tech Stack
 
 **Frontend:**
 - React 19 with TypeScript
 - Vite for blazing-fast builds
-- TailwindCSS (via CDN)
+- TailwindCSS via CDN
+- Framer Motion & GSAP animations
 - React Router for navigation
 - TanStack Query for data fetching
-- Recharts for visualizations
+- Recharts & React Force Graph for visualizations
+- html-to-image for social card generation
 
 **Backend:**
 - Express.js serverless functions
 - Helius API for blockchain data
-- Birdeye API for PnL analytics
+- Birdeye API for PnL analytics (optional)
 - TypeScript for type safety
 
 **Deployment:**
 - Vercel for hosting
-- Serverless architecture
+- Serverless functions
 - Edge network CDN
 
-## 📊 API Endpoints
+---
+
+## 📡 API Endpoints
 
 ### Health Check
-\`\`\`
+```
 GET /api/health
-\`\`\`
-
-Response:
-\`\`\`json
-{
-  "status": "ok",
-  "timestamp": "2026-01-11T05:00:00.000Z",
-  "heliusConfigured": true,
-  "birdeyeConfigured": true
-}
-\`\`\`
+```
 
 ### Scan Wallet
-\`\`\`
+```
 GET /api/scan/:address
-\`\`\`
+```
 
-Response:
-\`\`\`json
-{
-  "exposureScore": 75,
-  "scoreBreakdown": {
-    "identity": 60,
-    "kycLinks": 85,
-    "financial": 50,
-    "clustering": 70,
-    "activity": 80
-  },
-  "netWorthUsd": 15420.50,
-  "risks": [...],
-  "links": {...}
-}
-\`\`\`
+### Network Toggle
+```
+GET /api/network
+POST /api/network { "network": "mainnet" | "devnet" }
+```
+
+---
 
 ## 🔐 Privacy & Security
 
-- **No Data Storage** - All analysis is performed in real-time, no wallet data is stored
-- **Client-Side First** - Sensitive operations happen in your browser
-- **Open Source** - Full transparency, audit the code yourself
-- **API Key Security** - Environment variables never exposed to client
+- **No Data Storage** — All analysis is real-time, nothing persisted
+- **Open Source** — Full transparency, audit the code yourself
+- **API Keys Protected** — Environment variables never exposed to client
+- **Client-Side Rendering** — Sensitive operations in browser
+
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions welcome! Please submit a Pull Request.
 
-1. Fork the repository
-2. Create your feature branch (\`git checkout -b feature/AmazingFeature\`)
-3. Commit your changes (\`git commit -m 'Add some AmazingFeature'\`)
-4. Push to the branch (\`git push origin feature/AmazingFeature\`)
-5. Open a Pull Request
+```bash
+# Fork, then:
+git checkout -b feature/YourFeature
+git commit -m 'Add YourFeature'
+git push origin feature/YourFeature
+# Open PR
+```
+
+---
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
 
 ## ⚠️ Disclaimer
 
-This tool is for educational and informational purposes only. Exposure scores are probabilistic estimates based on observable public data. Privacy in Web3 requires proactive measures beyond simple wallet separation.
+This tool is for **educational purposes only**. Exposure scores are probabilistic estimates based on public on-chain data. True privacy in Web3 requires proactive measures beyond wallet management.
+
+---
 
 ## 🙏 Acknowledgments
 
-- [Helius](https://helius.dev) - Blockchain data infrastructure
-- [Birdeye](https://birdeye.so) - DeFi analytics
-- [Solana](https://solana.com) - High-performance blockchain
-
-## 📧 Contact
-
-For questions or support, please open an issue on GitHub.
+- [Helius](https://helius.dev) — Solana blockchain infrastructure
+- [Birdeye](https://birdeye.so) — DeFi analytics
+- [Encifher](https://app.encifher.io) — Privacy solutions
+- [Solana](https://solana.com) — High-performance blockchain
 
 ---
 

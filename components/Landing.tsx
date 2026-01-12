@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Shield, Zap, Lock, AlertCircle, Sparkles, TrendingUp, Fingerprint } from 'lucide-react';
+import { Search, Shield, Zap, Lock, AlertCircle, Sparkles, Fingerprint } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const Landing: React.FC = () => {
   const [address, setAddress] = useState('');
@@ -15,7 +16,6 @@ const Landing: React.FC = () => {
 
   const validateAddress = (val: string) => {
     if (!val) return 'Address is required';
-    // Basic Solana address format check (Base58, 32-44 chars)
     const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
     if (!base58Regex.test(val)) return 'Invalid Solana address format';
     return '';
@@ -32,32 +32,127 @@ const Landing: React.FC = () => {
     navigate(`/scan/${cleanAddress}`);
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 30, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 15
+      }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { y: 50, opacity: 0, scale: 0.95 },
+    visible: (i: number) => ({
+      y: 0,
+      opacity: 1,
+      scale: 1,
+      transition: {
+        delay: i * 0.1,
+        type: "spring",
+        stiffness: 80,
+        damping: 12
+      }
+    })
+  };
+
   return (
-    <div className="flex flex-col items-center text-center py-10 md:py-24 animate-in fade-in slide-in-from-top-8 duration-1000 relative">
-      {/* Background Decor */}
-      <div className="absolute top-0 -left-48 w-96 h-96 bg-solana-purple/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 -right-48 w-96 h-96 bg-solana-green/10 rounded-full blur-[120px] pointer-events-none" />
+    <motion.div
+      className="flex flex-col items-center text-center py-10 md:py-24 relative"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Animated Background Blobs */}
+      <motion.div
+        className="absolute top-0 -left-48 w-96 h-96 bg-solana-purple/10 rounded-full blur-[120px] pointer-events-none"
+        animate={{
+          x: [0, 50, 0],
+          y: [0, 30, 0],
+          scale: [1, 1.1, 1]
+        }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+      <motion.div
+        className="absolute bottom-0 -right-48 w-96 h-96 bg-solana-green/10 rounded-full blur-[120px] pointer-events-none"
+        animate={{
+          x: [0, -50, 0],
+          y: [0, -30, 0],
+          scale: [1, 1.2, 1]
+        }}
+        transition={{
+          duration: 25,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
 
-      <div className="mb-10 px-6 py-2 rounded-full border border-solana-purple/20 bg-solana-purple/5 text-solana-purple text-[10px] font-black uppercase tracking-[0.5em] flex items-center gap-3">
-        <Sparkles className="w-3 h-3" />
+      <motion.div
+        variants={itemVariants}
+        className="mb-10 px-6 py-2 rounded-full border border-solana-purple/20 bg-solana-purple/5 text-solana-purple text-[10px] font-black uppercase tracking-[0.5em] flex items-center gap-3"
+        whileHover={{ scale: 1.05, borderColor: "rgba(153, 69, 255, 0.4)" }}
+        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+        >
+          <Sparkles className="w-3 h-3" />
+        </motion.div>
         Advanced Privacy Intelligence
-      </div>
-      
-      <h2 className="text-6xl md:text-9xl font-black mb-10 tracking-tighter leading-[0.85] uppercase">
-        Reveal your <br />
-        <span className="solana-text-gradient">On-chain dossier</span>
-      </h2>
-      
-      <p className="text-lg md:text-2xl text-muted-foreground max-w-3xl mb-16 font-semibold leading-relaxed">
-        The ledger is permanent. We analyze your behavior, clusters, and social links to see how much of your <span className="text-foreground">real identity</span> is currently exposed.
-      </p>
+      </motion.div>
 
-      <form 
+      <motion.h2
+        variants={itemVariants}
+        className="text-6xl md:text-9xl font-black mb-10 tracking-tighter leading-[0.85] uppercase"
+      >
+        Reveal your <br />
+        <motion.span
+          className="solana-text-gradient inline-block"
+          whileHover={{ scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 400 }}
+        >
+          On-chain dossier
+        </motion.span>
+      </motion.h2>
+
+      <motion.p
+        variants={itemVariants}
+        className="text-lg md:text-2xl text-muted-foreground max-w-3xl mb-16 font-semibold leading-relaxed"
+      >
+        The ledger is permanent. We analyze your behavior, clusters, and social links to see how much of your <span className="text-foreground">real identity</span> is currently exposed.
+      </motion.p>
+
+      <motion.form
+        variants={itemVariants}
         onSubmit={handleSearch}
         className="w-full max-w-4xl space-y-6 mb-12"
       >
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-solana-green to-solana-purple rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+          <motion.div
+            className="absolute -inset-1 bg-gradient-to-r from-solana-green to-solana-purple rounded-[2rem] blur opacity-20"
+            whileHover={{ opacity: 0.6 }}
+            transition={{ duration: 0.3 }}
+          />
           <div className="relative flex flex-col md:flex-row gap-4 p-2 bg-secondary/50 backdrop-blur-xl border border-white/10 rounded-[2rem]">
             <div className="relative flex-grow">
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground w-6 h-6" />
@@ -72,67 +167,119 @@ const Landing: React.FC = () => {
                 className="w-full bg-transparent h-16 pl-16 pr-6 rounded-2xl focus:outline-none transition-all text-xl font-mono placeholder:text-muted-foreground/30"
               />
             </div>
-            <button
+            <motion.button
               type="submit"
-              className="bg-solana-purple hover:bg-solana-purple/90 h-16 px-12 rounded-2xl font-black text-xl shadow-2xl shadow-solana-purple/20 transition-all active:scale-95 whitespace-nowrap uppercase tracking-widest text-white"
+              className="bg-solana-purple hover:bg-solana-purple/90 h-16 px-12 rounded-2xl font-black text-xl shadow-2xl shadow-solana-purple/20 transition-all whitespace-nowrap uppercase tracking-widest text-white"
+              whileHover={{ scale: 1.02, boxShadow: "0 20px 60px rgba(153, 69, 255, 0.4)" }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
               Analyze Wallet
-            </button>
+            </motion.button>
           </div>
         </div>
         {error && (
-          <div className="flex items-center justify-center gap-2 text-red-500 text-sm font-black uppercase tracking-widest animate-in slide-in-from-top-2">
+          <motion.div
+            className="flex items-center justify-center gap-2 text-red-500 text-sm font-black uppercase tracking-widest"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 200 }}
+          >
             <AlertCircle className="w-4 h-4" />
             {error}
-          </div>
+          </motion.div>
         )}
-      </form>
+      </motion.form>
 
-      <div className="flex flex-wrap justify-center items-center gap-6 mb-24">
+      <motion.div
+        variants={itemVariants}
+        className="flex flex-wrap justify-center items-center gap-6 mb-24"
+      >
         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-50">Degen Examples:</span>
-        {EXAMPLE_WALLETS.map((w) => (
-          <button
+        {EXAMPLE_WALLETS.map((w, i) => (
+          <motion.button
             key={w.name}
             type="button"
             onClick={() => {
               setAddress(w.actual);
               setError('');
             }}
-            className="px-5 py-3 bg-secondary/80 border border-white/5 rounded-2xl text-xs font-black uppercase tracking-widest hover:border-solana-purple/50 transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
+            className="px-5 py-3 bg-secondary/80 border border-white/5 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-3"
+            whileHover={{
+              scale: 1.05,
+              borderColor: "rgba(153, 69, 255, 0.5)",
+              boxShadow: "0 8px 24px rgba(153, 69, 255, 0.2)"
+            }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 + i * 0.1, type: "spring", stiffness: 200 }}
           >
-            <div className="w-2 h-2 rounded-full bg-solana-purple" />
+            <motion.div
+              className="w-2 h-2 rounded-full bg-solana-purple"
+              animate={{ scale: [1, 1.3, 1] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+            />
             {w.name}
-          </button>
+          </motion.button>
         ))}
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-left w-full max-w-7xl">
-        <div className="p-10 rounded-[3rem] bg-secondary/20 border border-white/5 hover:bg-secondary/30 transition-all group relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-            <Fingerprint className="w-32 h-32 text-solana-green" />
-          </div>
-          <Shield className="w-12 h-12 text-solana-green mb-8 group-hover:scale-110 transition-transform" />
-          <h3 className="text-2xl font-black mb-4 tracking-tighter uppercase">Identity Leakage</h3>
-          <p className="text-muted-foreground font-medium leading-relaxed text-sm">Automated detection of SNS names (.sol), public social handles, and exchange-associated clusters.</p>
-        </div>
-        <div className="p-10 rounded-[3rem] bg-secondary/20 border border-white/5 hover:bg-secondary/30 transition-all group relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-            <Zap className="w-32 h-32 text-solana-purple" />
-          </div>
-          <Zap className="w-12 h-12 text-solana-purple mb-8 group-hover:scale-110 transition-transform" />
-          <h3 className="text-2xl font-black mb-4 tracking-tighter uppercase">Pattern Pulse</h3>
-          <p className="text-muted-foreground font-medium leading-relaxed text-sm">Real-time behavior analysis identifies high-frequency trading signatures unique to your footprint.</p>
-        </div>
-        <div className="p-10 rounded-[3rem] bg-secondary/20 border border-white/5 hover:bg-secondary/30 transition-all group relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-            <Lock className="w-32 h-32 text-solana-green" />
-          </div>
-          <Lock className="w-12 h-12 text-solana-green mb-8 group-hover:scale-110 transition-transform" />
-          <h3 className="text-2xl font-black mb-4 tracking-tighter uppercase">Stealth Advice</h3>
-          <p className="text-muted-foreground font-medium leading-relaxed text-sm">Actionable intelligence on using selective privacy tools like encrypt.trade to decouple your assets.</p>
-        </div>
+        {[
+          {
+            icon: Shield,
+            bgIcon: Fingerprint,
+            color: 'solana-green',
+            title: 'Identity Leakage',
+            description: 'Automated detection of SNS names (.sol), public social handles, and exchange-associated clusters.'
+          },
+          {
+            icon: Zap,
+            bgIcon: Zap,
+            color: 'solana-purple',
+            title: 'Pattern Pulse',
+            description: 'Real-time behavior analysis identifies high-frequency trading signatures unique to your footprint.'
+          },
+          {
+            icon: Lock,
+            bgIcon: Lock,
+            color: 'solana-green',
+            title: 'Stealth Advice',
+            description: 'Actionable intelligence on using selective privacy tools like encrypt.trade to decouple your assets.'
+          }
+        ].map((card, i) => (
+          <motion.div
+            key={card.title}
+            custom={i}
+            variants={cardVariants}
+            whileHover={{
+              y: -10,
+              scale: 1.02,
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)"
+            }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className="p-10 rounded-[3rem] bg-secondary/20 border border-white/5 group relative overflow-hidden cursor-pointer"
+          >
+            <motion.div
+              className="absolute top-0 right-0 p-8 opacity-5"
+              whileHover={{ opacity: 0.15, scale: 1.1, rotate: 10 }}
+              transition={{ duration: 0.6 }}
+            >
+              <card.bgIcon className={`w-32 h-32 text-${card.color}`} />
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.15, rotate: 5 }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
+              <card.icon className={`w-12 h-12 text-${card.color} mb-8`} />
+            </motion.div>
+            <h3 className="text-2xl font-black mb-4 tracking-tighter uppercase">{card.title}</h3>
+            <p className="text-muted-foreground font-medium leading-relaxed text-sm">{card.description}</p>
+          </motion.div>
+        ))}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

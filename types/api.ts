@@ -7,9 +7,17 @@ export interface ScoreBreakdown {
   activity: number;
 }
 
+export interface NetworkNode {
+  address: string;
+  type: 'CEX' | 'DEX' | 'MEMECOIN' | 'PROTOCOL' | 'UNKNOWN';
+  interactions: number;
+  label?: string;
+}
+
 export interface ClusteringData {
   interactedCount: number;
   topAddresses: string[];
+  networkNodes?: NetworkNode[]; // For graph visualization
 }
 
 export interface TransactionSummary {

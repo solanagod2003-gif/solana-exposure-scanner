@@ -4,6 +4,7 @@ import './config/env.js';
 import express from 'express';
 import cors from 'cors';
 import scanRoutes from './routes/scan.js';
+import { heliusService, SolanaNetwork } from './services/helius.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,6 +33,21 @@ app.get('/api/health', (req, res) => {
         heliusConfigured: !!process.env.HELIUS_API_KEY,
         birdeyeConfigured: !!process.env.BIRDEYE_API_KEY,
     });
+});
+
+// Network switch endpoint
+app.get('/api/network', (req, res) => {
+    res.json({ network: heliusService.getNetwork() });
+});
+
+app.post('/api/network', (req, res) => {
+    const { network } = req.body as { network: SolanaNetwork };
+    if (network !== 'mainnet' && network !== 'devnet') {
+        return res.status(400).json({ error: 'Invalid network. Use "mainnet" or "devnet".' });
+    }
+    heliusService.setNetwork(network);
+    console.log(`[Network] Switched to ${network}`);
+    res.json({ network, message: `Switched to ${network}` });
 });
 
 // Error handling
