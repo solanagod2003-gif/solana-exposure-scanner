@@ -80,6 +80,71 @@ const HELIUS_ENDPOINTS = {
     }
 };
 
+// ============================================
+// CACHING LAYER - Reduces API calls by ~90%
+// ============================================
+interface CacheEntry<T> {
+    data: T;
+    timestamp: number;
+    network: SolanaNetwork;
+}
+
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const scanCache = new Map<string, CacheEntry<any>>();
+const apiCallStats = { helius: 0, birdeye: 0, cached: 0 };
+
+function getCachedScan(address: string): any | null {
+    const key = `${currentNetwork}:${address}`;
+    const cached = scanCache.get(key);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL && cached.network === currentNetwork) {
+        apiCallStats.cached++;
+        console.log(`[Cache] HIT for ${address.slice(0, 8)}... (saved 3 API calls)`);
+        return cached.data;
+    }
+    return null;
+}
+
+function setCachedScan(address: string, data: any): void {
+    const key = `${currentNetwork}:${address}`;
+    scanCache.set(key, { data, timestamp: Date.now(), network: currentNetwork });
+    // Cleanup old entries (max 100 cached)
+    if (scanCache.size > 100) {
+        const oldest = Array.from(scanCache.entries())
+            .sort((a, b) => a[1].timestamp - b[1].timestamp)[0];
+        if (oldest) scanCache.delete(oldest[0]);
+    }
+}
+
+// ============================================
+// RATE LIMITING - Prevents abuse
+// ============================================
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 20; // 20 requests per minute per IP
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function isRateLimited(ip: string): boolean {
+    const now = Date.now();
+    const entry = rateLimitMap.get(ip);
+
+    if (!entry || now > entry.resetTime) {
+        rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+        return false;
+    }
+
+    if (entry.count >= RATE_LIMIT_MAX) {
+        return true;
+    }
+
+    entry.count++;
+    return false;
+}
+
+function getClientIP(req: VercelRequest): string {
+    return (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+        (req.headers['x-real-ip'] as string) ||
+        'unknown';
+}
+
 // Helius API calls
 async function getTransactionHistory(address: string, apiKey: string): Promise<HeliusTransaction[]> {
     const base = HELIUS_ENDPOINTS[currentNetwork].api;
@@ -361,7 +426,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             status: 'ok',
             timestamp: new Date().toISOString(),
             heliusConfigured: !!process.env.HELIUS_API_KEY,
+            birdeyeConfigured: !!process.env.BIRDEYE_API_KEY,
             network: currentNetwork,
+            cache: {
+                entries: scanCache.size,
+                ttlMinutes: CACHE_TTL / 60000,
+            },
+            apiCalls: apiCallStats,
         });
     }
 
@@ -383,13 +454,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (scanMatch) {
         const address = scanMatch[1];
         const apiKey = process.env.HELIUS_API_KEY;
+        const clientIP = getClientIP(req);
+
+        // Rate limiting check
+        if (isRateLimited(clientIP)) {
+            console.log(`[RateLimit] Blocked ${clientIP}`);
+            return res.status(429).json({
+                error: 'Too many requests',
+                message: 'Please wait a minute before scanning again.',
+                retryAfter: 60
+            });
+        }
 
         if (!apiKey) {
             return res.status(500).json({ error: 'HELIUS_API_KEY not configured' });
         }
 
+        // Check cache first
+        const cached = getCachedScan(address);
+        if (cached) {
+            return res.json({ ...cached, cached: true });
+        }
+
         try {
+            apiCallStats.helius += 3; // Track API usage
             const result = await analyzeWallet(address, apiKey);
+            setCachedScan(address, result); // Cache the result
             return res.json(result);
         } catch (error) {
             console.error('[Scan Error]', error);
