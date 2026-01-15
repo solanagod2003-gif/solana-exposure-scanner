@@ -2,6 +2,7 @@ import React from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Landing from './components/Landing';
+import PrivacyScoreExplanation from './components/PrivacyScoreExplanation';
 import Dashboard from './components/Dashboard';
 import Header from './components/Header';
 
@@ -25,6 +26,7 @@ const App: React.FC = () => {
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/scan/:address" element={<Dashboard />} />
+              <Route path="/privacy-score" element={<PrivacyScoreExplanation />} />
             </Routes>
           </main>
 
@@ -39,7 +41,7 @@ const App: React.FC = () => {
                   The ultimate privacy auditing tool for the Solana ecosystem. Powered by AI and on-chain intelligence.
                 </p>
               </div>
-              
+
               <div className="flex flex-col md:flex-row items-center gap-8">
                 <div className="flex gap-4 items-center">
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Network</span>

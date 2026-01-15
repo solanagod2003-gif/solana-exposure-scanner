@@ -30,8 +30,10 @@ const fetchWalletExposure = async (address: string): Promise<ExposureData> => {
       topAddresses: [],
     },
     risks: data.risks ?? ['No risk data available'],
+    snsDomains: data.snsDomains ?? [],
     links: data.links ?? {
       xSearch: `https://x.com/search?q=${address}`,
+      snsSearch: null,
       arkham: `https://platform.arkhamintelligence.com/explorer/address/${address}`,
       solscan: `https://solscan.io/account/${address}`,
     },

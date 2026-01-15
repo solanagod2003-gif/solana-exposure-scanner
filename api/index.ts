@@ -327,11 +327,30 @@ function analyzeFinancial(assets: HeliusAsset[], solBalance: number) {
     return { score, netWorth };
 }
 
+// SNS (Solana Name Service) domain lookup via Bonfida SDK Proxy
+async function getSNSDomains(address: string): Promise<string[]> {
+    try {
+        const url = `https://sns-sdk-proxy.bonfida.workers.dev/domains/${address}`;
+        const response = await fetch(url);
+        if (!response.ok) return [];
+        const data = await response.json();
+        // API returns result array with domain public keys, need to resolve them
+        // For now, just check if domains exist - the proxy returns domain names
+        if (Array.isArray(data.result)) {
+            return data.result.slice(0, 5); // Return up to 5 domains
+        }
+        return [];
+    } catch {
+        return [];
+    }
+}
+
 async function analyzeWallet(address: string, apiKey: string) {
-    const [transactions, assets, solBalance] = await Promise.all([
+    const [transactions, assets, solBalance, snsDomains] = await Promise.all([
         getTransactionHistory(address, apiKey).catch(() => []),
         getAssetsByOwner(address, apiKey).catch(() => []),
         getBalance(address, apiKey).catch(() => 0),
+        getSNSDomains(address).catch(() => []),
     ]);
 
     if (transactions.length === 0 && assets.length === 0 && solBalance === 0) {
@@ -344,8 +363,18 @@ async function analyzeWallet(address: string, apiKey: string) {
     const identityAnalysis = analyzeIdentity(assets);
     const financialAnalysis = analyzeFinancial(assets, solBalance);
 
+    // SNS domains significantly increase identity exposure
+    let identityScore = identityAnalysis.score;
+    if (snsDomains.length > 0) {
+        identityScore += 30; // Major dox risk
+    }
+    if (snsDomains.length > 2) {
+        identityScore += 15; // Multiple domains = higher exposure
+    }
+    identityScore = Math.min(95, identityScore);
+
     const scoreBreakdown = {
-        identity: identityAnalysis.score,
+        identity: identityScore,
         kycLinks: cexAnalysis.score,
         financial: financialAnalysis.score,
         clustering: clusteringAnalysis.score,
@@ -373,6 +402,9 @@ async function analyzeWallet(address: string, apiKey: string) {
     if (identityAnalysis.hasNFTs) {
         risks.push('NFT holdings may contain identifying metadata');
     }
+    if (snsDomains.length > 0) {
+        risks.push(`SNS domains detected (${snsDomains.join(', ')}) - direct identity linkage. Anyone can search this domain on X or Google to find you.`);
+    }
     if (risks.length === 0) {
         risks.push('Limited on-chain activity - low exposure profile');
     }
@@ -397,8 +429,10 @@ async function analyzeWallet(address: string, apiKey: string) {
         memecoinTrades: Math.floor(tradeCount * 0.4),
         clustering: clusteringAnalysis.data,
         risks,
+        snsDomains,
         links: {
             xSearch: `https://x.com/search?q=${address}&src=typed_query`,
+            snsSearch: snsDomains.length > 0 ? `https://x.com/search?q=${snsDomains[0]}.sol&src=typed_query` : null,
             arkham: `https://platform.arkhamintelligence.com/explorer/address/${address}`,
             solscan: `https://solscan.io/account/${address}`,
         },

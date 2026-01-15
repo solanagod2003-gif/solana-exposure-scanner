@@ -27,6 +27,7 @@ export interface TransactionSummary {
 
 export interface ExternalLinks {
     xSearch: string;
+    snsSearch: string | null;
     arkham: string;
     solscan: string;
 }
@@ -40,6 +41,7 @@ export interface ExposureAnalysis {
     memecoinTrades: number;
     clustering: ClusteringData;
     risks: string[];
+    snsDomains: string[];
     links: ExternalLinks;
     recentTxSummary: TransactionSummary[];
 }
@@ -55,10 +57,32 @@ interface AnalyzerInput {
 class ExposureAnalyzer {
 
     /**
+     * Fetch SNS domains from Bonfida SDK Proxy
+     */
+    async getSNSDomains(address: string): Promise<string[]> {
+        try {
+            const url = `https://sns-sdk-proxy.bonfida.workers.dev/domains/${address}`;
+            const response = await fetch(url);
+            if (!response.ok) return [];
+            const data = await response.json();
+            // API returns result array with domain names
+            if (Array.isArray(data.result)) {
+                return data.result.slice(0, 5); // Return up to 5 domains
+            }
+            return [];
+        } catch {
+            return [];
+        }
+    }
+
+    /**
      * Main analysis function - calculates full exposure profile
      */
-    analyze(input: AnalyzerInput): ExposureAnalysis {
+    async analyze(input: AnalyzerInput): Promise<ExposureAnalysis> {
         const { address, transactions, assets, solBalance, pnlData } = input;
+
+        // Fetch SNS domains via Bonfida API
+        const snsDomains = await this.getSNSDomains(address);
 
         // Calculate individual scores
         const cexAnalysis = this.analyzeCexConnections(transactions);
@@ -68,8 +92,18 @@ class ExposureAnalyzer {
         const financialAnalysis = this.analyzeFinancial(assets, solBalance, pnlData);
 
         // Calculate score breakdown (0-100 each, where higher = more exposed)
+        // SNS domains significantly increase identity exposure
+        let identityScore = identityAnalysis.score;
+        if (snsDomains.length > 0) {
+            identityScore += 30; // Major dox risk
+        }
+        if (snsDomains.length > 2) {
+            identityScore += 15; // Multiple domains = higher exposure
+        }
+        identityScore = Math.min(95, identityScore);
+
         const scoreBreakdown: ScoreBreakdown = {
-            identity: identityAnalysis.score,
+            identity: identityScore,
             kycLinks: cexAnalysis.score,
             financial: financialAnalysis.score,
             clustering: clusteringAnalysis.score,
@@ -85,8 +119,8 @@ class ExposureAnalyzer {
             scoreBreakdown.identity * 0.10         // Identity metadata
         );
 
-        // Generate risks list
-        const risks = this.generateRisks(cexAnalysis, activityAnalysis, clusteringAnalysis, identityAnalysis);
+        // Generate risks list (pass snsDomains for additional risk)
+        const risks = this.generateRisks(cexAnalysis, activityAnalysis, clusteringAnalysis, identityAnalysis, snsDomains);
 
         // Generate transaction summaries
         const recentTxSummary = this.generateTxSummaries(transactions.slice(0, 10));
@@ -108,8 +142,10 @@ class ExposureAnalyzer {
             memecoinTrades,
             clustering: clusteringAnalysis.data,
             risks,
+            snsDomains,
             links: {
                 xSearch: `https://x.com/search?q=${address}&src=typed_query`,
+                snsSearch: snsDomains.length > 0 ? `https://x.com/search?q=${snsDomains[0]}.sol&src=typed_query` : null,
                 arkham: `https://platform.arkhamintelligence.com/explorer/address/${address}`,
                 solscan: `https://solscan.io/account/${address}`,
             },
@@ -499,7 +535,8 @@ class ExposureAnalyzer {
         cexAnalysis: { exchanges: string[]; txCount: number },
         activityAnalysis: { txCount: number; daysActive: number },
         clusteringAnalysis: { data: ClusteringData },
-        identityAnalysis: { hasNFTs: boolean; hasSNS: boolean }
+        identityAnalysis: { hasNFTs: boolean; hasSNS: boolean },
+        snsDomains: string[] = []
     ): string[] {
         const risks: string[] = [];
 
@@ -515,7 +552,10 @@ class ExposureAnalyzer {
             risks.push(`Interacted with ${clusteringAnalysis.data.interactedCount} unique addresses - clustering analysis possible`);
         }
 
-        if (identityAnalysis.hasSNS) {
+        // SNS domains from API lookup (most reliable)
+        if (snsDomains.length > 0) {
+            risks.push(`SNS domains detected (${snsDomains.map(d => d + '.sol').join(', ')}) - direct identity linkage. Anyone can search this domain on X or Google to find you.`);
+        } else if (identityAnalysis.hasSNS) {
             risks.push('SNS domain ownership detected - potential identity correlation');
         }
 

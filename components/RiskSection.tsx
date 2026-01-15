@@ -105,15 +105,67 @@ const RiskSection: React.FC<RiskSectionProps> = ({ data }) => {
             If your address was ever posted publicly on social media or linked to a name service (SNS),
             automated bots have already indexed it. <span className="text-foreground">Selective privacy like encrypt.trade allows you to trade without linking back to these public IDs.</span>
           </p>
+
+          {/* SNS Domains Warning */}
+          {data.snsDomains && data.snsDomains.length > 0 && (
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 space-y-3">
+              <div className="flex items-center gap-2 text-red-400 font-bold text-sm">
+                <AlertCircle className="w-4 h-4" />
+                {data.snsDomains.length} SNS Domain{data.snsDomains.length > 1 ? 's' : ''} Detected - Direct Identity Link
+              </div>
+              <p className="text-xs text-red-300/80">
+                Your wallet is permanently linked to these public identifiers. Anyone can search these on X, Google, or Solana explorers to find your transaction history.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {data.snsDomains.map(domain => (
+                  <a
+                    key={domain}
+                    href={`https://www.sns.id/domain/${domain}`}
+                    target="_blank"
+                    className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 rounded-full text-xs font-bold text-red-300 border border-red-500/30 transition-all flex items-center gap-1.5"
+                  >
+                    {domain}.sol
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* X Search Section */}
+          <div className="space-y-3">
+            <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Search Your Exposure on X
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={data.links.xSearch}
+                target="_blank"
+                className="flex items-center gap-2 px-4 py-2.5 bg-black border border-white/10 rounded-xl hover:border-solana-purple/50 hover:bg-white/5 transition-all text-xs font-bold group"
+              >
+                <Search className="w-4 h-4 text-solana-purple" />
+                Search Wallet Address
+                <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-solana-purple transition-colors" />
+              </a>
+              {data.links.snsSearch && (
+                <a
+                  href={data.links.snsSearch}
+                  target="_blank"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl hover:border-red-500/50 hover:bg-red-500/20 transition-all text-xs font-bold text-red-300 group"
+                >
+                  <Search className="w-4 h-4 text-red-400" />
+                  Search "{data.snsDomains[0]}.sol" on X
+                  <ExternalLink className="w-3 h-3 text-red-400/60 group-hover:text-red-400 transition-colors" />
+                </a>
+              )}
+            </div>
+            <p className="text-[10px] text-muted-foreground italic">
+              Click to see if your address or SNS domain has been publicly shared on X (Twitter). Results show permanent public exposure.
+            </p>
+          </div>
+
+          {/* Other Search Links */}
           <div className="flex flex-wrap gap-4">
-            <a
-              href={data.links.xSearch}
-              target="_blank"
-              className="flex items-center gap-2 px-4 py-2 bg-black border border-white/10 rounded-xl hover:border-solana-purple/50 transition-all text-xs font-bold"
-            >
-              <Search className="w-4 h-4 text-solana-purple" />
-              Check X History
-            </a>
             <a
               href={data.links.arkham}
               target="_blank"

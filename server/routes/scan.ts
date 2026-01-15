@@ -67,7 +67,7 @@ router.get('/:address', async (req: Request, res: Response) => {
         }
 
         // Analyze exposure
-        const analysis = exposureAnalyzer.analyze({
+        const analysis = await exposureAnalyzer.analyze({
             address,
             transactions,
             assets,

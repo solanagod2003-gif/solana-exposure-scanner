@@ -211,7 +211,9 @@ const Landing: React.FC = () => {
         >
           🚀 Try Demo Wallet
         </motion.button>
-        <span className="text-muted-foreground text-sm">No wallet address? See it in action first!</span>
+        <span className="text-muted-foreground text-sm">
+          No wallet address? <span className="underline cursor-pointer hover:text-white" onClick={() => navigate('/privacy-score')}>See how it works</span> or see it in action!
+        </span>
       </motion.div>
 
       <motion.div
