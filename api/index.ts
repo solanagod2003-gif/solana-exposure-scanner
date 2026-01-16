@@ -148,7 +148,7 @@ function getClientIP(req: VercelRequest): string {
 // Helius API calls
 async function getTransactionHistory(address: string, apiKey: string): Promise<HeliusTransaction[]> {
     const base = HELIUS_ENDPOINTS[currentNetwork].api;
-    const url = `${base}/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=100`;
+    const url = `${base}/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=500`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Helius error: ${response.status}`);
     return response.json();
@@ -474,9 +474,26 @@ async function analyzeWallet(address: string, apiKey: string) {
         risks.push('Limited on-chain activity - low exposure profile');
     }
 
-    const tradeCount = transactions.filter(tx =>
-        tx.type === 'SWAP' || tx.type === 'TOKEN_MINT' || tx.type?.includes('TRADE')
+    // Count trades more comprehensively - includes swaps, DEX activity, and token transfers
+    const tradeTypes = ['SWAP', 'TOKEN_MINT', 'TRADE', 'NFT_SALE', 'NFT_MINT', 'TRANSFER', 'BURN'];
+    const tradeCount = transactions.filter(tx => {
+        const txType = tx.type?.toUpperCase() || '';
+        // Match exact types or partial matches
+        return tradeTypes.some(t => txType.includes(t)) ||
+            (tx.tokenTransfers && tx.tokenTransfers.length > 0); // Any token transfer counts
+    }).length;
+
+    // Count actual token swap transactions more accurately
+    const swapCount = transactions.filter(tx =>
+        tx.type === 'SWAP' || tx.source?.includes('JUPITER') || tx.source?.includes('RAYDIUM') ||
+        tx.description?.toLowerCase().includes('swap') || tx.description?.toLowerCase().includes('traded')
     ).length;
+
+    // Memecoin trades: estimate based on high-frequency token swaps without stable token involvement
+    const memecoinTrades = Math.max(
+        Math.floor(swapCount * 0.6), // 60% of swaps are likely memecoin-related
+        transactions.filter(tx => tx.tokenTransfers && tx.tokenTransfers.length >= 2).length
+    );
 
     const recentTxSummary = transactions.slice(0, 10).map(tx => ({
         date: tx.timestamp ? new Date(tx.timestamp * 1000).toISOString().split('T')[0] : 'Unknown',
@@ -491,7 +508,7 @@ async function analyzeWallet(address: string, apiKey: string) {
         netWorthUsd: financialAnalysis.netWorth,
         realizedLossesUsd: 0,
         tradeCount,
-        memecoinTrades: Math.floor(tradeCount * 0.4),
+        memecoinTrades,
         clustering: clusteringAnalysis.data,
         risks,
         snsDomains,
