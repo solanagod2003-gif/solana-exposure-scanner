@@ -614,6 +614,21 @@ async function analyzeWallet(address: string, apiKey: string) {
             solscan: `https://solscan.io/account/${address}`,
         },
         recentTxSummary,
+        // Debug info - remove after fixing
+        _debug: {
+            txCount: transactions.length,
+            assetsCount: assets.length,
+            solBalance,
+            hasNativeTransfers: transactions.filter(tx => tx.nativeTransfers?.length).length,
+            hasTokenTransfers: transactions.filter(tx => tx.tokenTransfers?.length).length,
+            rawScores: {
+                cex: cexAnalysis.score,
+                activity: activityAnalysis.score,
+                clustering: clusteringAnalysis.score,
+                identity: identityScore,
+                financial: financialAnalysis.score,
+            }
+        }
     };
 }
 
