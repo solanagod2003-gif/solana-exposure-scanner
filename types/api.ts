@@ -30,6 +30,7 @@ export interface TransactionSummary {
 export interface ExternalLinks {
   xSearch: string;
   snsSearch: string | null;
+  twitterProfile: string | null;
   arkham: string;
   solscan: string;
 }
@@ -44,6 +45,7 @@ export interface ExposureData {
   clustering: ClusteringData;
   risks: string[];
   snsDomains: string[];
+  twitterHandles: string[];
   links: ExternalLinks;
   recentTxSummary: TransactionSummary[];
 }
