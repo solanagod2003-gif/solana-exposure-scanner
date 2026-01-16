@@ -345,17 +345,76 @@ async function getSNSDomains(address: string): Promise<string[]> {
     }
 }
 
+// Fetch Twitter handle linked to a wallet address via Bonfida SNS SDK Proxy
+async function getTwitterHandle(address: string): Promise<string | null> {
+    try {
+        const url = `https://sdk-proxy.sns.id/twitter/get-handle-by-key/${address}`;
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const data = await response.json();
+        // API returns { result: "handle" } or { result: null }
+        if (data.result && typeof data.result === 'string') {
+            return data.result;
+        }
+        return null;
+    } catch {
+        return null;
+    }
+}
+
+// Fetch Twitter record from a specific SNS domain
+async function getTwitterFromDomain(domain: string): Promise<string | null> {
+    try {
+        // Remove .sol suffix if present for the API call
+        const cleanDomain = domain.replace(/\.sol$/, '');
+        const url = `https://sdk-proxy.sns.id/record-v2/${cleanDomain}/twitter`;
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const data = await response.json();
+        if (data.result && typeof data.result === 'string') {
+            return data.result;
+        }
+        return null;
+    } catch {
+        return null;
+    }
+}
+
 async function analyzeWallet(address: string, apiKey: string) {
-    const [transactions, assets, solBalance, snsDomains] = await Promise.all([
+    const [transactions, assets, solBalance, snsDomains, twitterHandle] = await Promise.all([
         getTransactionHistory(address, apiKey).catch(() => []),
         getAssetsByOwner(address, apiKey).catch(() => []),
         getBalance(address, apiKey).catch(() => 0),
         getSNSDomains(address).catch(() => []),
+        getTwitterHandle(address).catch(() => null),
     ]);
 
     if (transactions.length === 0 && assets.length === 0 && solBalance === 0) {
         throw new Error('No data found for this wallet');
     }
+
+    // Also try to get Twitter handles from SNS domain records
+    const domainTwitterHandles: string[] = [];
+    if (snsDomains.length > 0) {
+        const domainTwitterPromises = snsDomains.slice(0, 3).map(domain =>
+            getTwitterFromDomain(domain).catch(() => null)
+        );
+        const results = await Promise.all(domainTwitterPromises);
+        results.forEach(handle => {
+            if (handle && !domainTwitterHandles.includes(handle)) {
+                domainTwitterHandles.push(handle);
+            }
+        });
+    }
+
+    // Combine all Twitter handles found
+    const allTwitterHandles: string[] = [];
+    if (twitterHandle) allTwitterHandles.push(twitterHandle);
+    domainTwitterHandles.forEach(handle => {
+        if (!allTwitterHandles.includes(handle)) {
+            allTwitterHandles.push(handle);
+        }
+    });
 
     const cexAnalysis = analyzeCexConnections(transactions);
     const activityAnalysis = analyzeActivity(transactions);
@@ -363,13 +422,16 @@ async function analyzeWallet(address: string, apiKey: string) {
     const identityAnalysis = analyzeIdentity(assets);
     const financialAnalysis = analyzeFinancial(assets, solBalance);
 
-    // SNS domains significantly increase identity exposure
+    // SNS domains and Twitter handles significantly increase identity exposure
     let identityScore = identityAnalysis.score;
     if (snsDomains.length > 0) {
         identityScore += 30; // Major dox risk
     }
     if (snsDomains.length > 2) {
         identityScore += 15; // Multiple domains = higher exposure
+    }
+    if (allTwitterHandles.length > 0) {
+        identityScore += 25; // Twitter handle linked = MAJOR dox risk
     }
     identityScore = Math.min(95, identityScore);
 
@@ -405,6 +467,9 @@ async function analyzeWallet(address: string, apiKey: string) {
     if (snsDomains.length > 0) {
         risks.push(`SNS domains detected (${snsDomains.join(', ')}) - direct identity linkage. Anyone can search this domain on X or Google to find you.`);
     }
+    if (allTwitterHandles.length > 0) {
+        risks.push(`🚨 Twitter handle(s) linked: @${allTwitterHandles.join(', @')} - CRITICAL: Your real identity is directly exposed!`);
+    }
     if (risks.length === 0) {
         risks.push('Limited on-chain activity - low exposure profile');
     }
@@ -430,9 +495,11 @@ async function analyzeWallet(address: string, apiKey: string) {
         clustering: clusteringAnalysis.data,
         risks,
         snsDomains,
+        twitterHandles: allTwitterHandles,
         links: {
             xSearch: `https://x.com/search?q=${address}&src=typed_query`,
             snsSearch: snsDomains.length > 0 ? `https://x.com/search?q=${snsDomains[0]}.sol&src=typed_query` : null,
+            twitterProfile: allTwitterHandles.length > 0 ? `https://x.com/${allTwitterHandles[0]}` : null,
             arkham: `https://platform.arkhamintelligence.com/explorer/address/${address}`,
             solscan: `https://solscan.io/account/${address}`,
         },
