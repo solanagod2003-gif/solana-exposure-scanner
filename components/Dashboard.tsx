@@ -19,7 +19,8 @@ import {
   BookOpen,
   Clock,
   Download,
-  Play
+  Play,
+  Info
 } from 'lucide-react';
 import { useWalletScan } from '../hooks/useWalletScan';
 import { truncateAddress, cn } from '../lib/utils';
@@ -212,6 +213,56 @@ const Dashboard: React.FC = () => {
       {/* Analysis UI */}
       <div className="space-y-24">
         <ExposureGauge score={scanData.exposureScore} breakdown={scanData.scoreBreakdown} />
+
+        {/* Key Metrics Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+          {[
+            {
+              label: 'Unique Addresses',
+              value: scanData.clustering.interactedCount,
+              icon: '🔗',
+              description: 'Addresses you\'ve interacted with',
+              color: 'from-purple-500/20 to-purple-500/5'
+            },
+            {
+              label: 'Net Worth',
+              value: `$${scanData.netWorthUsd.toLocaleString()}`,
+              icon: '💰',
+              description: 'Estimated portfolio value',
+              color: 'from-green-500/20 to-green-500/5'
+            },
+            {
+              label: 'Total Trades',
+              value: scanData.tradeCount,
+              icon: '📊',
+              description: 'DeFi & DEX transactions',
+              color: 'from-blue-500/20 to-blue-500/5'
+            },
+            {
+              label: 'Transactions',
+              value: scanData.recentTxSummary.length,
+              icon: '⚡',
+              description: 'Recent activity analyzed',
+              color: 'from-yellow-500/20 to-yellow-500/5'
+            }
+          ].map((metric, idx) => (
+            <div
+              key={idx}
+              className={`p-6 rounded-2xl bg-gradient-to-br ${metric.color} border border-white/5 hover:border-white/10 transition-all group`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <span className="text-3xl group-hover:scale-110 transition-transform">{metric.icon}</span>
+                <Tooltip content={metric.description}>
+                  <Info className="w-4 h-4 text-muted-foreground opacity-50 hover:opacity-100 transition-opacity" />
+                </Tooltip>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl lg:text-3xl font-black tracking-tight">{metric.value}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{metric.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
 
         <div className="space-y-10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-6">
