@@ -214,23 +214,28 @@ class ExposureAnalyzer {
 
         // Calculate time span
         const timestamps = transactions.map(tx => tx.timestamp).filter(Boolean);
-        const oldest = Math.min(...timestamps);
-        const newest = Math.max(...timestamps);
-        const daysActive = Math.max(1, Math.floor((newest - oldest) / (24 * 60 * 60)));
 
-        // Calculate tx frequency
-        const txPerDay = txCount / daysActive;
+        // Handle edge case of no valid timestamps
+        let daysActive = 1;
+        let txPerDay = txCount;
 
-        // Score: higher activity = more exposure
+        if (timestamps.length >= 2) {
+            const oldest = Math.min(...timestamps);
+            const newest = Math.max(...timestamps);
+            daysActive = Math.max(1, Math.floor((newest - oldest) / (24 * 60 * 60)));
+            txPerDay = txCount / daysActive;
+        }
+
+        // Improved scoring with better thresholds - start scoring from just 1 tx
         let score = 0;
-        if (txCount >= 10) score = 20;
-        if (txCount >= 50) score = 40;
-        if (txCount >= 100) score = 55;
-        if (txCount >= 500) score = 70;
-        if (txCount >= 1000) score = 85;
-
-        // Boost for high frequency
-        if (txPerDay > 5) score = Math.min(95, score + 10);
+        if (txCount >= 1) score = 10;
+        if (txCount >= 5) score = 20;
+        if (txCount >= 20) score = 35;
+        if (txCount >= 50) score = 50;
+        if (txCount >= 100) score = 65;
+        if (txCount >= 250) score = 80;
+        if (txCount >= 500) score = 90;
+        if (txPerDay > 3) score = Math.min(95, score + 5);
 
         return {
             score,
@@ -306,13 +311,15 @@ class ExposureAnalyzer {
             return node;
         });
 
-        // Score: more interactions = higher clustering exposure
+        // Score: more interactions = higher clustering exposure - start from 1
         let score = 0;
-        if (interactedCount >= 5) score = 20;
-        if (interactedCount >= 20) score = 40;
-        if (interactedCount >= 50) score = 55;
-        if (interactedCount >= 100) score = 70;
-        if (interactedCount >= 500) score = 85;
+        if (interactedCount >= 1) score = 10;
+        if (interactedCount >= 3) score = 20;
+        if (interactedCount >= 10) score = 35;
+        if (interactedCount >= 25) score = 50;
+        if (interactedCount >= 50) score = 65;
+        if (interactedCount >= 100) score = 80;
+        if (interactedCount >= 200) score = 90;
 
         return {
             score,
@@ -514,13 +521,15 @@ class ExposureAnalyzer {
             }
         }
 
-        // Score: higher value = more attractive target = more exposure concern
+        // Improved scoring thresholds - start from any balance
         let score = 0;
-        if (netWorth >= 100) score = 20;
-        if (netWorth >= 1000) score = 35;
-        if (netWorth >= 10000) score = 50;
-        if (netWorth >= 100000) score = 70;
-        if (netWorth >= 1000000) score = 90;
+        if (netWorth > 0) score = 10;
+        if (netWorth >= 10) score = 20;
+        if (netWorth >= 100) score = 35;
+        if (netWorth >= 1000) score = 50;
+        if (netWorth >= 10000) score = 65;
+        if (netWorth >= 50000) score = 80;
+        if (netWorth >= 100000) score = 90;
 
         return {
             score,
