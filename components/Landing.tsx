@@ -8,14 +8,8 @@ const Landing: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Demo wallet - a known active Solana wallet for demonstration
-  const DEMO_WALLET = '7Vbmv1jt4vyuqBZcpYPpnVhrqVe5e6ZPb6JxDcffRHUM';
-
-  const EXAMPLE_WALLETS = [
-    { name: 'Whale', address: '7Vbm...RHUM', actual: '7Vbmv1jt4vyuqBZcpYPpnVhrqVe5e6ZPb6JxDcffRHUM' },
-    { name: 'Trader', address: 'DYw8...4ESV', actual: 'DYw8jCTfwHNRJhhmFcbXvVDTqWMEVFBX6ZKUmG5C4ESV' },
-    { name: 'Degen', address: '5Q54...4j1', actual: '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1' }
-  ];
+  // Demo wallet for demonstration
+  const DEMO_WALLET = 'DL66m4cajzyz6659m8djQmuY5RdJpevhf7a5vFVEFech';
 
   const handleDemoScan = () => {
     navigate(`/scan/${DEMO_WALLET}`);
@@ -216,39 +210,7 @@ const Landing: React.FC = () => {
         </span>
       </motion.div>
 
-      <motion.div
-        variants={itemVariants}
-        className="flex flex-wrap justify-center items-center gap-6 mb-24"
-      >
-        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-50">Or try these:</span>
-        {EXAMPLE_WALLETS.map((w, i) => (
-          <motion.button
-            key={w.name}
-            type="button"
-            onClick={() => {
-              setAddress(w.actual);
-              setError('');
-            }}
-            className="px-5 py-3 bg-secondary/80 border border-white/5 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-3"
-            whileHover={{
-              scale: 1.05,
-              borderColor: "rgba(153, 69, 255, 0.5)",
-              boxShadow: "0 8px 24px rgba(153, 69, 255, 0.2)"
-            }}
-            whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 + i * 0.1, type: "spring", stiffness: 200 }}
-          >
-            <motion.div
-              className="w-2 h-2 rounded-full bg-solana-purple"
-              animate={{ scale: [1, 1.3, 1] }}
-              transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-            />
-            {w.name}
-          </motion.button>
-        ))}
-      </motion.div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-left w-full max-w-7xl">
         {[
