@@ -251,20 +251,28 @@ function analyzeCexConnections(transactions: HeliusTransaction[]) {
 function analyzeActivity(transactions: HeliusTransaction[]) {
     const txCount = transactions.length;
     const timestamps = transactions.map(tx => tx.timestamp).filter(Boolean);
-    const oldest = Math.min(...timestamps);
-    const newest = Math.max(...timestamps);
-    const daysActive = Math.max(1, Math.floor((newest - oldest) / (24 * 60 * 60)));
-    const txPerDay = txCount / daysActive;
 
-    // Improved scoring with better thresholds
+    // Handle edge case of no valid timestamps
+    let daysActive = 1;
+    let txPerDay = txCount;
+
+    if (timestamps.length >= 2) {
+        const oldest = Math.min(...timestamps);
+        const newest = Math.max(...timestamps);
+        daysActive = Math.max(1, Math.floor((newest - oldest) / (24 * 60 * 60)));
+        txPerDay = txCount / daysActive;
+    }
+
+    // Improved scoring with better thresholds - start scoring from just 1 tx
     let score = 0;
-    if (txCount >= 5) score = 15;
-    if (txCount >= 20) score = 30;
-    if (txCount >= 50) score = 45;
-    if (txCount >= 100) score = 60;
-    if (txCount >= 250) score = 75;
-    if (txCount >= 500) score = 85;
-    if (txPerDay > 3) score = Math.min(95, score + 10);
+    if (txCount >= 1) score = 10;
+    if (txCount >= 5) score = 20;
+    if (txCount >= 20) score = 35;
+    if (txCount >= 50) score = 50;
+    if (txCount >= 100) score = 65;
+    if (txCount >= 250) score = 80;
+    if (txCount >= 500) score = 90;
+    if (txPerDay > 3) score = Math.min(95, score + 5);
 
     return { score, txCount, daysActive, txPerDay };
 }
@@ -301,14 +309,15 @@ function analyzeClustering(transactions: HeliusTransaction[], selfAddress: strin
         label: CEX_ADDRESSES[addr] || undefined,
     }));
 
-    // Improved scoring - more realistic thresholds
+    // Improved scoring - start from 1 interaction
     let score = 0;
-    if (interactedCount >= 3) score = 15;
-    if (interactedCount >= 10) score = 30;
-    if (interactedCount >= 25) score = 45;
-    if (interactedCount >= 50) score = 60;
-    if (interactedCount >= 100) score = 75;
-    if (interactedCount >= 200) score = 85;
+    if (interactedCount >= 1) score = 10;
+    if (interactedCount >= 3) score = 20;
+    if (interactedCount >= 10) score = 35;
+    if (interactedCount >= 25) score = 50;
+    if (interactedCount >= 50) score = 65;
+    if (interactedCount >= 100) score = 80;
+    if (interactedCount >= 200) score = 90;
 
     return { score, data: { interactedCount, topAddresses, networkNodes } };
 }
@@ -343,14 +352,15 @@ function analyzeFinancial(assets: HeliusAsset[], solBalance: number) {
         }
     }
 
-    // Improved scoring thresholds
+    // Improved scoring thresholds - start from any balance
     let score = 0;
-    if (netWorth >= 50) score = 15;
-    if (netWorth >= 500) score = 30;
-    if (netWorth >= 2000) score = 45;
-    if (netWorth >= 10000) score = 60;
-    if (netWorth >= 50000) score = 75;
-    if (netWorth >= 100000) score = 85;
+    if (netWorth > 0) score = 10;
+    if (netWorth >= 10) score = 20;
+    if (netWorth >= 100) score = 35;
+    if (netWorth >= 1000) score = 50;
+    if (netWorth >= 10000) score = 65;
+    if (netWorth >= 50000) score = 80;
+    if (netWorth >= 100000) score = 90;
 
     return { score, netWorth };
 }
@@ -444,11 +454,38 @@ async function analyzeWallet(address: string, apiKey: string) {
         }
     });
 
+    // Debug logging to understand data flow
+    console.log('[Debug] Analysis data:', {
+        transactionCount: transactions.length,
+        hasNativeTransfers: transactions.filter(tx => tx.nativeTransfers?.length).length,
+        hasTokenTransfers: transactions.filter(tx => tx.tokenTransfers?.length).length,
+        assetsCount: assets.length,
+        solBalance,
+        snsDomains,
+        sampleTx: transactions[0] ? {
+            type: transactions[0].type,
+            source: transactions[0].source,
+            nativeTransfers: transactions[0].nativeTransfers?.length || 0,
+            tokenTransfers: transactions[0].tokenTransfers?.length || 0,
+        } : null
+    });
+
     const cexAnalysis = analyzeCexConnections(transactions);
     const activityAnalysis = analyzeActivity(transactions);
     const clusteringAnalysis = analyzeClustering(transactions, address);
     const identityAnalysis = analyzeIdentity(assets);
     const financialAnalysis = analyzeFinancial(assets, solBalance);
+
+    // Debug logging for individual scores
+    console.log('[Debug] Scores:', {
+        cex: cexAnalysis.score,
+        activity: activityAnalysis.score,
+        clustering: clusteringAnalysis.score,
+        identity: identityAnalysis.score,
+        financial: financialAnalysis.score,
+        txCount: activityAnalysis.txCount,
+        interactedCount: clusteringAnalysis.data.interactedCount,
+    });
 
     // SNS domains and Twitter handles significantly increase identity exposure
     let identityScore = identityAnalysis.score;
