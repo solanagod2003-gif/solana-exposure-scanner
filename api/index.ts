@@ -281,6 +281,7 @@ function analyzeClustering(transactions: HeliusTransaction[], selfAddress: strin
     const addressCounts = new Map<string, number>();
 
     for (const tx of transactions) {
+        // Check nativeTransfers
         for (const transfer of tx.nativeTransfers || []) {
             const counterparty = transfer.toUserAccount === selfAddress
                 ? transfer.fromUserAccount
@@ -289,12 +290,21 @@ function analyzeClustering(transactions: HeliusTransaction[], selfAddress: strin
                 addressCounts.set(counterparty, (addressCounts.get(counterparty) || 0) + 1);
             }
         }
+        // Check tokenTransfers
         for (const transfer of tx.tokenTransfers || []) {
             const counterparty = transfer.toUserAccount === selfAddress
                 ? transfer.fromUserAccount
                 : transfer.toUserAccount;
             if (counterparty && counterparty !== selfAddress) {
                 addressCounts.set(counterparty, (addressCounts.get(counterparty) || 0) + 1);
+            }
+        }
+
+        // Fallback: if no transfers, use feePayer as a signal of interaction
+        if ((!tx.nativeTransfers || tx.nativeTransfers.length === 0) &&
+            (!tx.tokenTransfers || tx.tokenTransfers.length === 0)) {
+            if (tx.feePayer && tx.feePayer !== selfAddress) {
+                addressCounts.set(tx.feePayer, (addressCounts.get(tx.feePayer) || 0) + 1);
             }
         }
     }
@@ -462,13 +472,12 @@ async function analyzeWallet(address: string, apiKey: string) {
         assetsCount: assets.length,
         solBalance,
         snsDomains,
-        sampleTx: transactions[0] ? {
-            type: transactions[0].type,
-            source: transactions[0].source,
-            nativeTransfers: transactions[0].nativeTransfers?.length || 0,
-            tokenTransfers: transactions[0].tokenTransfers?.length || 0,
-        } : null
     });
+
+    // Log the first transaction structure to understand the API response
+    if (transactions.length > 0) {
+        console.log('[Debug] First TX structure:', JSON.stringify(transactions[0], null, 2).slice(0, 2000));
+    }
 
     const cexAnalysis = analyzeCexConnections(transactions);
     const activityAnalysis = analyzeActivity(transactions);
