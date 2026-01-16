@@ -26,6 +26,17 @@ interface HeliusTransaction {
         mint: string;
         tokenStandard: string;
     }>;
+    accountData?: Array<{
+        account: string;
+        nativeBalanceChange: number;
+        tokenBalanceChanges?: Array<{
+            mint: string;
+            rawTokenAmount: {
+                tokenAmount: string;
+                decimals: number;
+            };
+        }>;
+    }>;
     description?: string;
 }
 
@@ -300,12 +311,20 @@ function analyzeClustering(transactions: HeliusTransaction[], selfAddress: strin
             }
         }
 
-        // Fallback: if no transfers, use feePayer as a signal of interaction
+        // Fallback 1: Check accountData for addresses with balance changes
         if ((!tx.nativeTransfers || tx.nativeTransfers.length === 0) &&
             (!tx.tokenTransfers || tx.tokenTransfers.length === 0)) {
-            if (tx.feePayer && tx.feePayer !== selfAddress) {
-                addressCounts.set(tx.feePayer, (addressCounts.get(tx.feePayer) || 0) + 1);
+            for (const acct of tx.accountData || []) {
+                if (acct.account && acct.account !== selfAddress &&
+                    (acct.nativeBalanceChange !== 0 || (acct.tokenBalanceChanges && acct.tokenBalanceChanges.length > 0))) {
+                    addressCounts.set(acct.account, (addressCounts.get(acct.account) || 0) + 1);
+                }
             }
+        }
+
+        // Fallback 2: if still no addresses, use feePayer as a signal of interaction
+        if (addressCounts.size === 0 && tx.feePayer && tx.feePayer !== selfAddress) {
+            addressCounts.set(tx.feePayer, (addressCounts.get(tx.feePayer) || 0) + 1);
         }
     }
 
