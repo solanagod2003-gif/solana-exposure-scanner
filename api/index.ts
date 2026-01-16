@@ -105,7 +105,7 @@ interface CacheEntry<T> {
     network: SolanaNetwork;
 }
 
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 30 * 1000; // 30 seconds (reduced for debugging)
 const scanCache = new Map<string, CacheEntry<any>>();
 const apiCallStats = { helius: 0, birdeye: 0, cached: 0 };
 
