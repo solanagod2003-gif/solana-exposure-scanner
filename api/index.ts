@@ -48,22 +48,38 @@ interface HeliusAsset {
     interface?: string;
 }
 
-// CEX Addresses
+// CEX Addresses - Expanded list
 const CEX_ADDRESSES: Record<string, string> = {
+    // Binance
     '5tzFkiKscXHK5ZXCGbXZxdw7gTjjxKYz6NJNdqYFMYuM': 'Binance',
     '9WzDXwBbmkg8ZTbNMqUxvQRAyrZ1n9pVdBD3xaT9WJ5S': 'Binance',
     'AC5RDfQFmDS1deWZos921JfqscXdByf8BKHs5ACWjtW2': 'Binance',
+    '2ojv9BAiHUrvsm9gxDe7fJSzbNZSJcxZvf8dqmWGHG8S': 'Binance',
+    // Coinbase
     'H8sMJSCQxfKiFTCfDR3DUMLPwcRbMRJjg5VbhH5A5YF': 'Coinbase',
     '2AQdpHJ2JpcEgPiATUXjQxA8QmafFegfQwSLWuxv5DR': 'Coinbase',
-    'GJRs4FwHtemZ5ZE9x3FNvJ8TMwxTboF3YHdFxjnj5K7m': 'Kraken',
+    'GJRs4FwHtemZ5ZE9x3FNvJ8TMwxTboF3YHdFxjnj5K7m': 'Coinbase',
+    // Kraken
     'HzZFvXjTMr9fB7Bg8f843dXxnTxZ6P6P7B3shMmqjNW6': 'Kraken',
+    'CQjCGbM9WPPbD7k9K9w7wqz5gpMhKaGQNJEHU5fQD1gg': 'Kraken',
+    // FTX (legacy)
     'LGNDSCoQfZZDZDBtVLgXvmJpqzRjRBcXSxwkSZjp3wN': 'FTX',
     'FTT76KUtNQsLRcTPseDVKqQ2aFByMwuBNwHqL82b7TCV': 'FTX',
-    '5VCwKtCXgCJ6kit5FybXjvriW3xELsFDhYrPSqtJNmcD': 'Huobi',
-    'rEsRUVz8K8yLCqMKMPxNwc2RLey5aWwCxw9bHmgWxgL': 'Kucoin',
+    // OKX
     'BmFdpraQhkiDQE6wthKDdMuGBg7eKqhP4aXqvjXNBvE': 'OKX',
+    '5VCwKtCXgCJ6kit5FybXjvriW3xELsFDhYrPSqtJNmcD': 'OKX',
+    // Bybit
+    'AC5RDfQFmDS1deWZos921JfqscXdByf8BKHs5ACWjtW3': 'Bybit',
+    // Kucoin  
+    'rEsRUVz8K8yLCqMKMPxNwc2RLey5aWwCxw9bHmgWxgL': 'Kucoin',
+    // Huobi
+    '88xTWZMeKfiTgbfEmPLdsUCQcZinwUfk25EBQZ21XMAZ': 'Huobi',
+    // Gate.io
+    'u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w': 'Gate.io',
+    // DEX Aggregators (also link to identity via wallet connections)
     '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1': 'Raydium',
     'JUP6i4ozu5ydDCnLiMogSckDPpbtr7BJ4FtzYWkb5Rk': 'Jupiter',
+    '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8': 'Raydium AMM',
 };
 
 // State
@@ -240,12 +256,15 @@ function analyzeActivity(transactions: HeliusTransaction[]) {
     const daysActive = Math.max(1, Math.floor((newest - oldest) / (24 * 60 * 60)));
     const txPerDay = txCount / daysActive;
 
+    // Improved scoring with better thresholds
     let score = 0;
-    if (txCount >= 10) score = 20;
-    if (txCount >= 50) score = 40;
-    if (txCount >= 100) score = 55;
-    if (txCount >= 500) score = 70;
-    if (txPerDay > 5) score = Math.min(95, score + 10);
+    if (txCount >= 5) score = 15;
+    if (txCount >= 20) score = 30;
+    if (txCount >= 50) score = 45;
+    if (txCount >= 100) score = 60;
+    if (txCount >= 250) score = 75;
+    if (txCount >= 500) score = 85;
+    if (txPerDay > 3) score = Math.min(95, score + 10);
 
     return { score, txCount, daysActive, txPerDay };
 }
@@ -282,11 +301,14 @@ function analyzeClustering(transactions: HeliusTransaction[], selfAddress: strin
         label: CEX_ADDRESSES[addr] || undefined,
     }));
 
+    // Improved scoring - more realistic thresholds
     let score = 0;
-    if (interactedCount >= 5) score = 20;
-    if (interactedCount >= 20) score = 40;
-    if (interactedCount >= 50) score = 55;
-    if (interactedCount >= 100) score = 70;
+    if (interactedCount >= 3) score = 15;
+    if (interactedCount >= 10) score = 30;
+    if (interactedCount >= 25) score = 45;
+    if (interactedCount >= 50) score = 60;
+    if (interactedCount >= 100) score = 75;
+    if (interactedCount >= 200) score = 85;
 
     return { score, data: { interactedCount, topAddresses, networkNodes } };
 }
@@ -311,18 +333,24 @@ function analyzeIdentity(assets: HeliusAsset[]) {
 }
 
 function analyzeFinancial(assets: HeliusAsset[], solBalance: number) {
-    let netWorth = solBalance * 200;
+    // Use a more current SOL price estimate (~$150-250 range)
+    const solPriceEstimate = 180;
+    let netWorth = solBalance * solPriceEstimate;
+
     for (const asset of assets) {
         if (asset.token_info?.price_info?.total_price) {
             netWorth += asset.token_info.price_info.total_price;
         }
     }
 
+    // Improved scoring thresholds
     let score = 0;
-    if (netWorth >= 100) score = 20;
-    if (netWorth >= 1000) score = 35;
-    if (netWorth >= 10000) score = 50;
-    if (netWorth >= 100000) score = 70;
+    if (netWorth >= 50) score = 15;
+    if (netWorth >= 500) score = 30;
+    if (netWorth >= 2000) score = 45;
+    if (netWorth >= 10000) score = 60;
+    if (netWorth >= 50000) score = 75;
+    if (netWorth >= 100000) score = 85;
 
     return { score, netWorth };
 }
