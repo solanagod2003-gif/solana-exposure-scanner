@@ -180,19 +180,62 @@ function getClientIP(req: VercelRequest): string {
 // Helius API calls
 async function getTransactionHistory(address: string, apiKey: string): Promise<HeliusTransaction[]> {
     const base = HELIUS_ENDPOINTS[currentNetwork].api;
-    // Note: Helius free tier limits to 100 transactions per request
-    const url = `${base}/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=100`;
+    const limit = 100; // Helius free tier max per request
+    const maxBatches = 3; // Fetch up to 300 transactions total
+
+    let allTransactions: HeliusTransaction[] = [];
+    let before: string | undefined = undefined;
+
     console.log(`[Helius] Fetching transactions for ${address.slice(0, 8)}...`);
-    const response = await fetch(url);
-    console.log(`[Helius] Response status: ${response.status}`);
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[Helius] Error response:`, errorText);
-        throw new Error(`Helius error: ${response.status} - ${errorText}`);
+
+    for (let batch = 0; batch < maxBatches; batch++) {
+        try {
+            const url = before
+                ? `${base}/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=${limit}&before=${before}`
+                : `${base}/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=${limit}`;
+
+            const response = await fetch(url);
+            console.log(`[Helius] Batch ${batch + 1} response status: ${response.status}`);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`[Helius] Error response:`, errorText);
+                if (batch === 0) {
+                    // If first batch fails, throw error
+                    throw new Error(`Helius error: ${response.status} - ${errorText}`);
+                }
+                // If subsequent batches fail, just return what we have
+                break;
+            }
+
+            const data: HeliusTransaction[] = await response.json();
+            console.log(`[Helius] Batch ${batch + 1}: Fetched ${data.length} transactions`);
+
+            if (data.length === 0) {
+                // No more transactions available
+                break;
+            }
+
+            allTransactions = allTransactions.concat(data);
+
+            // Set 'before' to the signature of the last transaction for pagination
+            if (data.length === limit) {
+                before = data[data.length - 1].signature;
+            } else {
+                // Less than limit means we've reached the end
+                break;
+            }
+        } catch (error) {
+            if (batch === 0) {
+                throw error; // Re-throw if first batch fails
+            }
+            console.error(`[Helius] Batch ${batch + 1} failed, stopping pagination:`, error);
+            break;
+        }
     }
-    const data = await response.json();
-    console.log(`[Helius] Fetched ${data.length} transactions`);
-    return data;
+
+    console.log(`[Helius] Total fetched: ${allTransactions.length} transactions`);
+    return allTransactions;
 }
 
 async function getAssetsByOwner(address: string, apiKey: string): Promise<HeliusAsset[]> {
@@ -289,15 +332,16 @@ function analyzeActivity(transactions: HeliusTransaction[]) {
     }
 
     // Improved scoring with better thresholds - start scoring from just 1 tx
-    // Max out at 100 due to Helius free tier limit
+    // Can fetch up to 300 transactions via pagination (3 batches of 100)
     let score = 0;
     if (txCount >= 1) score = 10;
-    if (txCount >= 5) score = 20;
-    if (txCount >= 20) score = 35;
-    if (txCount >= 50) score = 50;
-    if (txCount >= 75) score = 65;
-    if (txCount >= 100) score = 80;
-    if (txPerDay > 3) score = Math.min(95, score + 10);
+    if (txCount >= 10) score = 20;
+    if (txCount >= 30) score = 35;
+    if (txCount >= 75) score = 50;
+    if (txCount >= 150) score = 65;
+    if (txCount >= 225) score = 80;
+    if (txCount >= 300) score = 90;
+    if (txPerDay > 3) score = Math.min(95, score + 5);
 
     return { score, txCount, daysActive, txPerDay };
 }
