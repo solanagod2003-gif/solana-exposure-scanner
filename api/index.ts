@@ -626,6 +626,15 @@ async function analyzeWallet(address: string, apiKey: string) {
             solBalance,
             hasNativeTransfers: transactions.filter(tx => tx.nativeTransfers?.length).length,
             hasTokenTransfers: transactions.filter(tx => tx.tokenTransfers?.length).length,
+            recentTxCount: recentTxSummary.length,
+            clusteringCount: clusteringAnalysis.data.interactedCount,
+            networkNodesCount: clusteringAnalysis.data.networkNodes?.length || 0,
+            sampleTx: transactions[0] ? {
+                type: transactions[0].type,
+                hasNativeTransfers: !!transactions[0].nativeTransfers?.length,
+                hasTokenTransfers: !!transactions[0].tokenTransfers?.length,
+                hasAccountData: !!transactions[0].accountData?.length,
+            } : null,
             rawScores: {
                 cex: cexAnalysis.score,
                 activity: activityAnalysis.score,

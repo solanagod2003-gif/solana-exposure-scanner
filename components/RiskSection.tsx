@@ -220,22 +220,30 @@ const RiskSection: React.FC<RiskSectionProps> = ({ data }) => {
         <div className="space-y-4">
           <p className="text-muted-foreground text-sm">
             You have interacted with <span className="text-foreground font-bold">{data.clustering.interactedCount}</span> unique addresses.
-            Behavioral clustering links you to these top nodes:
+            {data.clustering.topAddresses && data.clustering.topAddresses.length > 0 && (
+              <> Behavioral clustering links you to these top nodes:</>
+            )}
           </p>
-          <div className="grid gap-2">
-            {data.clustering.topAddresses.map((addr, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-black/20 border border-white/5 group hover:border-solana-purple/30 transition-all cursor-default">
-                <span className="font-mono text-[11px] text-muted-foreground group-hover:text-foreground transition-colors truncate max-w-[200px] md:max-w-none">
-                  {addr}
-                </span>
-                <MousePointer2 className="w-3.5 h-3.5 text-solana-purple opacity-0 group-hover:opacity-100 transition-opacity" />
+          {data.clustering.topAddresses && data.clustering.topAddresses.length > 0 ? (
+            <>
+              <div className="grid gap-2">
+                {data.clustering.topAddresses.map((addr, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-black/20 border border-white/5 group hover:border-solana-purple/30 transition-all cursor-default">
+                    <span className="font-mono text-[11px] text-muted-foreground group-hover:text-foreground transition-colors truncate max-w-[200px] md:max-w-none">
+                      {addr}
+                    </span>
+                    <MousePointer2 className="w-3.5 h-3.5 text-solana-purple opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="mt-4 p-4 rounded-xl bg-solana-green/5 border border-solana-green/10 text-[11px] text-solana-green font-bold flex gap-2">
-            <ShieldAlert className="w-4 h-4 flex-shrink-0" />
-            Encrypting swaps on encrypt.trade breaks these cluster chains, preventing you from being grouped with compromised entities.
-          </div>
+              <div className="mt-4 p-4 rounded-xl bg-solana-green/5 border border-solana-green/10 text-[11px] text-solana-green font-bold flex gap-2">
+                <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+                Encrypting swaps on encrypt.trade breaks these cluster chains, preventing you from being grouped with compromised entities.
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">No clustering data available - wallet may have limited interaction history.</p>
+          )}
         </div>
       </AccordionItem>
 
@@ -282,33 +290,37 @@ const RiskSection: React.FC<RiskSectionProps> = ({ data }) => {
         badge="Footprints"
         tooltipContent="Your most recent public footprints. Each entry represents data leaked to MEV bots and trackers."
       >
-        <div className="rounded-2xl border border-white/5 overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-white/5">
-              <tr>
-                <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest text-muted-foreground">Type</th>
-                <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest text-muted-foreground">Description</th>
-                <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest text-muted-foreground text-right">Value</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {data.recentTxSummary.map((tx, idx) => (
-                <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-bold uppercase">{tx.type}</span>
-                  </td>
-                  <td className="px-4 py-3 font-medium text-muted-foreground">{tx.description}</td>
-                  <td className={cn(
-                    "px-4 py-3 font-mono font-black text-right",
-                    tx.amountUsd > 0 ? "text-solana-green" : "text-red-400"
-                  )}>
-                    ${Math.abs(tx.amountUsd).toLocaleString()}
-                  </td>
+        {data.recentTxSummary && data.recentTxSummary.length > 0 ? (
+          <div className="rounded-2xl border border-white/5 overflow-hidden">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-white/5">
+                <tr>
+                  <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest text-muted-foreground">Type</th>
+                  <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest text-muted-foreground">Description</th>
+                  <th className="px-4 py-3 font-black text-[10px] uppercase tracking-widest text-muted-foreground text-right">Value</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {data.recentTxSummary.map((tx, idx) => (
+                  <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-bold uppercase">{tx.type}</span>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-muted-foreground">{tx.description}</td>
+                    <td className={cn(
+                      "px-4 py-3 font-mono font-black text-right",
+                      tx.amountUsd > 0 ? "text-solana-green" : "text-red-400"
+                    )}>
+                      ${Math.abs(tx.amountUsd).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No recent transaction data available</p>
+        )}
       </AccordionItem>
     </div>
   );
