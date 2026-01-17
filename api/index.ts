@@ -114,8 +114,10 @@ interface CacheEntry<T> {
     data: T;
     timestamp: number;
     network: SolanaNetwork;
+    version: number;
 }
 
+const CACHE_VERSION = 2; // Increment this to invalidate all old cache entries
 const CACHE_TTL = 30 * 1000; // 30 seconds (reduced for debugging)
 const scanCache = new Map<string, CacheEntry<any>>();
 const apiCallStats = { helius: 0, birdeye: 0, cached: 0 };
@@ -123,7 +125,10 @@ const apiCallStats = { helius: 0, birdeye: 0, cached: 0 };
 function getCachedScan(address: string): any | null {
     const key = `${currentNetwork}:${address}`;
     const cached = scanCache.get(key);
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL && cached.network === currentNetwork) {
+    if (cached &&
+        cached.version === CACHE_VERSION &&
+        Date.now() - cached.timestamp < CACHE_TTL &&
+        cached.network === currentNetwork) {
         apiCallStats.cached++;
         console.log(`[Cache] HIT for ${address.slice(0, 8)}... (saved 3 API calls)`);
         return cached.data;
@@ -133,7 +138,7 @@ function getCachedScan(address: string): any | null {
 
 function setCachedScan(address: string, data: any): void {
     const key = `${currentNetwork}:${address}`;
-    scanCache.set(key, { data, timestamp: Date.now(), network: currentNetwork });
+    scanCache.set(key, { data, timestamp: Date.now(), network: currentNetwork, version: CACHE_VERSION });
     // Cleanup old entries (max 100 cached)
     if (scanCache.size > 100) {
         const oldest = Array.from(scanCache.entries())
