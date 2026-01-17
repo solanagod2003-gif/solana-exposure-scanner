@@ -180,7 +180,7 @@ function getClientIP(req: VercelRequest): string {
 // Helius API calls
 async function getTransactionHistory(address: string, apiKey: string): Promise<HeliusTransaction[]> {
     const base = HELIUS_ENDPOINTS[currentNetwork].api;
-    const url = `${base}/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=500`;
+    const url = `${base}/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=100`;
     console.log(`[Helius] Fetching transactions for ${address.slice(0, 8)}...`);
     const response = await fetch(url);
     console.log(`[Helius] Response status: ${response.status}`);
