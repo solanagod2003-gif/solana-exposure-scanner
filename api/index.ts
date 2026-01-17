@@ -181,9 +181,17 @@ function getClientIP(req: VercelRequest): string {
 async function getTransactionHistory(address: string, apiKey: string): Promise<HeliusTransaction[]> {
     const base = HELIUS_ENDPOINTS[currentNetwork].api;
     const url = `${base}/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=500`;
+    console.log(`[Helius] Fetching transactions for ${address.slice(0, 8)}...`);
     const response = await fetch(url);
-    if (!response.ok) throw new Error(`Helius error: ${response.status}`);
-    return response.json();
+    console.log(`[Helius] Response status: ${response.status}`);
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[Helius] Error response:`, errorText);
+        throw new Error(`Helius error: ${response.status} - ${errorText}`);
+    }
+    const data = await response.json();
+    console.log(`[Helius] Fetched ${data.length} transactions`);
+    return data;
 }
 
 async function getAssetsByOwner(address: string, apiKey: string): Promise<HeliusAsset[]> {
@@ -454,11 +462,26 @@ async function getTwitterFromDomain(domain: string): Promise<string | null> {
 
 async function analyzeWallet(address: string, apiKey: string) {
     const [transactions, assets, solBalance, snsDomains, twitterHandle] = await Promise.all([
-        getTransactionHistory(address, apiKey).catch(() => []),
-        getAssetsByOwner(address, apiKey).catch(() => []),
-        getBalance(address, apiKey).catch(() => 0),
-        getSNSDomains(address).catch(() => []),
-        getTwitterHandle(address).catch(() => null),
+        getTransactionHistory(address, apiKey).catch((err) => {
+            console.error('[Helius TX Error]', err.message || err);
+            return [];
+        }),
+        getAssetsByOwner(address, apiKey).catch((err) => {
+            console.error('[Helius Assets Error]', err.message || err);
+            return [];
+        }),
+        getBalance(address, apiKey).catch((err) => {
+            console.error('[Helius Balance Error]', err.message || err);
+            return 0;
+        }),
+        getSNSDomains(address).catch((err) => {
+            console.error('[SNS Error]', err.message || err);
+            return [];
+        }),
+        getTwitterHandle(address).catch((err) => {
+            console.error('[Twitter Handle Error]', err.message || err);
+            return null;
+        }),
     ]);
 
     if (transactions.length === 0 && assets.length === 0 && solBalance === 0) {
