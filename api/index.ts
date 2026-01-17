@@ -180,7 +180,8 @@ function getClientIP(req: VercelRequest): string {
 // Helius API calls
 async function getTransactionHistory(address: string, apiKey: string): Promise<HeliusTransaction[]> {
     const base = HELIUS_ENDPOINTS[currentNetwork].api;
-    const url = `${base}/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=200`;
+    // Note: Helius free tier limits to 100 transactions per request
+    const url = `${base}/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=100`;
     console.log(`[Helius] Fetching transactions for ${address.slice(0, 8)}...`);
     const response = await fetch(url);
     console.log(`[Helius] Response status: ${response.status}`);
@@ -288,15 +289,15 @@ function analyzeActivity(transactions: HeliusTransaction[]) {
     }
 
     // Improved scoring with better thresholds - start scoring from just 1 tx
+    // Max out at 100 due to Helius free tier limit
     let score = 0;
     if (txCount >= 1) score = 10;
     if (txCount >= 5) score = 20;
     if (txCount >= 20) score = 35;
     if (txCount >= 50) score = 50;
-    if (txCount >= 100) score = 65;
-    if (txCount >= 150) score = 80;
-    if (txCount >= 200) score = 90;
-    if (txPerDay > 3) score = Math.min(95, score + 5);
+    if (txCount >= 75) score = 65;
+    if (txCount >= 100) score = 80;
+    if (txPerDay > 3) score = Math.min(95, score + 10);
 
     return { score, txCount, daysActive, txPerDay };
 }
