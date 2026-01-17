@@ -118,7 +118,7 @@ interface CacheEntry<T> {
 }
 
 const CACHE_VERSION = 2; // Increment this to invalidate all old cache entries
-const CACHE_TTL = 30 * 1000; // 30 seconds (reduced for debugging)
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 const scanCache = new Map<string, CacheEntry<any>>();
 const apiCallStats = { helius: 0, birdeye: 0, cached: 0 };
 
@@ -180,7 +180,7 @@ function getClientIP(req: VercelRequest): string {
 // Helius API calls
 async function getTransactionHistory(address: string, apiKey: string): Promise<HeliusTransaction[]> {
     const base = HELIUS_ENDPOINTS[currentNetwork].api;
-    const url = `${base}/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=100`;
+    const url = `${base}/v0/addresses/${address}/transactions?api-key=${apiKey}&limit=200`;
     console.log(`[Helius] Fetching transactions for ${address.slice(0, 8)}...`);
     const response = await fetch(url);
     console.log(`[Helius] Response status: ${response.status}`);
@@ -294,8 +294,8 @@ function analyzeActivity(transactions: HeliusTransaction[]) {
     if (txCount >= 20) score = 35;
     if (txCount >= 50) score = 50;
     if (txCount >= 100) score = 65;
-    if (txCount >= 250) score = 80;
-    if (txCount >= 500) score = 90;
+    if (txCount >= 150) score = 80;
+    if (txCount >= 200) score = 90;
     if (txPerDay > 3) score = Math.min(95, score + 5);
 
     return { score, txCount, daysActive, txPerDay };
