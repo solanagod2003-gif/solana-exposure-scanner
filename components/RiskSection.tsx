@@ -322,6 +322,137 @@ const RiskSection: React.FC<RiskSectionProps> = ({ data }) => {
           <p className="text-sm text-muted-foreground">No recent transaction data available</p>
         )}
       </AccordionItem>
+
+      {/* DeFi Positions */}
+      {data.defiPositions && data.defiPositions.length > 0 && (
+        <AccordionItem
+          id="defi"
+          title="DeFi Positions"
+          icon={DollarSign}
+          badge="Protocols"
+          tooltipContent="Your interactions with DeFi protocols reveal your trading strategies and financial activities."
+        >
+          <div className="space-y-3">
+            <p className="text-muted-foreground text-sm">
+              Detected activity across <span className="text-foreground font-bold">{data.defiPositions.length}</span> DeFi protocols:
+            </p>
+            <div className="grid gap-2">
+              {data.defiPositions.map((position, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-black/20 border border-white/5 hover:border-solana-purple/30 transition-all">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-foreground">{position.protocol}</span>
+                      <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-bold uppercase">
+                        {position.type}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Last activity: {position.lastActivity}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-mono font-black text-solana-green">
+                      {position.interactions} txs
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </AccordionItem>
+      )}
+
+      {/* Loss Analysis */}
+      {data.topLosses && data.topLosses.length > 0 && (
+        <AccordionItem
+          id="losses"
+          title="Estimated Losses"
+          icon={TrendingDown}
+          badge="Risk"
+          tooltipContent="Estimated losses from memecoin trading and failed transactions - permanent on-chain record."
+        >
+          <div className="space-y-3">
+            <p className="text-muted-foreground text-sm">
+              Detected potential losses from risky trading activities:
+            </p>
+            <div className="grid gap-2">
+              {data.topLosses.map((loss, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-red-500/5 border border-red-500/20 hover:border-red-500/40 transition-all">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Flame className="w-4 h-4 text-red-400" />
+                      <span className="font-bold text-foreground">{loss.protocol}</span>
+                      <span className="px-2 py-0.5 rounded-md bg-red-500/20 text-[10px] font-bold uppercase text-red-400">
+                        {loss.type}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-mono font-black text-red-400">
+                      -${loss.estimatedLoss.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 p-4 rounded-xl bg-yellow-500/5 border border-yellow-500/10 text-[11px] text-yellow-400 font-bold flex gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              These losses are permanently visible on-chain and can be used to profile your risk tolerance and trading behavior.
+            </div>
+          </div>
+        </AccordionItem>
+      )}
+
+      {/* Related Addresses */}
+      {data.relatedAddresses && data.relatedAddresses.length > 0 && (
+        <AccordionItem
+          id="related"
+          title="Related Addresses"
+          icon={LinkIcon}
+          badge="Secondary Wallets"
+          tooltipContent="Addresses that received gas money from you - likely your other wallets. This links multiple identities together."
+        >
+          <div className="space-y-3">
+            <p className="text-muted-foreground text-sm">
+              Found <span className="text-foreground font-bold">{data.relatedAddresses.length}</span> potentially related addresses:
+            </p>
+            <div className="grid gap-2">
+              {data.relatedAddresses.map((related, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-black/20 border border-white/5 hover:border-solana-purple/30 transition-all">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm text-foreground">{related.address}</span>
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-md text-[10px] font-bold uppercase",
+                        related.confidence === 'high' ? 'bg-red-500/20 text-red-400' :
+                          related.confidence === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-blue-500/20 text-blue-400'
+                      )}>
+                        {related.confidence}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {related.reason}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-mono font-black text-solana-green">
+                      {related.totalAmount} SOL
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {related.gasTransfers} transfers
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 p-4 rounded-xl bg-red-500/5 border border-red-500/10 text-[11px] text-red-400 font-bold flex gap-2">
+              <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+              🚨 CRITICAL: These gas transfers permanently link multiple wallets to your identity. Surveillance firms use this to build complete profiles.
+            </div>
+          </div>
+        </AccordionItem>
+      )}
     </div>
   );
 };
