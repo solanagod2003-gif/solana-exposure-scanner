@@ -668,6 +668,83 @@ async function analyzeWallet(address: string, apiKey: string) {
         description: tx.description || `${tx.type} transaction`,
     }));
 
+    // Analyze DeFi positions
+    const DEFI_PROTOCOLS: Record<string, { name: string; type: string }> = {
+        'JUP6i4ozu5ydDCnLiMogSckDPpbtr7BJ4FtzYWkb5Rk': { name: 'Jupiter', type: 'DEX' },
+        'MarBmsSgKXdrN1egZf5sqe1TMai9K1rChYNDJgjq7aD': { name: 'Marinade', type: 'Staking' },
+        'So1endDq2YkqhipRh3WViPa8hdiSpxWy6z3Z6tMCpAo': { name: 'Solend', type: 'Lending' },
+        'KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD': { name: 'Kamino', type: 'Lending' },
+        'dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH': { name: 'Drift', type: 'Perps' },
+        '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P': { name: 'Pump.fun', type: 'Memecoin' },
+    };
+
+    const protocolActivity = new Map<string, { count: number; lastTimestamp: number }>();
+    for (const tx of transactions) {
+        const addresses = [tx.feePayer, ...(tx.nativeTransfers || []).flatMap(t => [t.fromUserAccount, t.toUserAccount])];
+        for (const addr of addresses) {
+            const protocol = DEFI_PROTOCOLS[addr];
+            if (protocol) {
+                const existing = protocolActivity.get(protocol.name) || { count: 0, lastTimestamp: 0 };
+                protocolActivity.set(protocol.name, {
+                    count: existing.count + 1,
+                    lastTimestamp: Math.max(existing.lastTimestamp, tx.timestamp || 0)
+                });
+            }
+        }
+    }
+
+    const defiPositions = Array.from(protocolActivity.entries()).map(([protocol, data]) => {
+        const info = Object.values(DEFI_PROTOCOLS).find(p => p.name === protocol)!;
+        return {
+            protocol,
+            type: info.type,
+            interactions: data.count,
+            lastActivity: data.lastTimestamp > 0 ? new Date(data.lastTimestamp * 1000).toISOString().split('T')[0] : 'Unknown'
+        };
+    }).sort((a, b) => b.interactions - a.interactions).slice(0, 10);
+
+    // Analyze losses
+    const losses = new Map<string, number>();
+    for (const tx of transactions) {
+        const isPumpFun = tx.description?.toLowerCase().includes('pump') || tx.source?.toLowerCase().includes('pump');
+        if (isPumpFun) {
+            const amount = (tx.nativeTransfers || []).reduce((sum, t) => sum + t.amount, 0) / 1e9 * 180 * 0.4;
+            losses.set('Pump.fun', (losses.get('Pump.fun') || 0) + amount);
+        }
+    }
+    const topLosses = Array.from(losses.entries()).map(([protocol, loss]) => ({
+        protocol,
+        type: 'Memecoin',
+        estimatedLoss: Math.round(loss * 100) / 100
+    })).sort((a, b) => b.estimatedLoss - a.estimatedLoss).slice(0, 5);
+
+    // Find related addresses
+    const gasTransfers = new Map<string, { count: number; total: number }>();
+    for (const tx of transactions) {
+        for (const transfer of tx.nativeTransfers || []) {
+            const amount = transfer.amount / 1e9;
+            if (amount < 0.1 && amount > 0.001) {
+                const target = transfer.fromUserAccount === address ? transfer.toUserAccount :
+                    transfer.toUserAccount === address ? transfer.fromUserAccount : null;
+                if (target && !CEX_ADDRESSES[target]) {
+                    const stats = gasTransfers.get(target) || { count: 0, total: 0 };
+                    gasTransfers.set(target, { count: stats.count + 1, total: stats.total + amount });
+                }
+            }
+        }
+    }
+    const relatedAddresses = Array.from(gasTransfers.entries())
+        .filter(([_, stats]) => stats.count >= 2)
+        .map(([addr, stats]) => ({
+            address: addr.slice(0, 8) + '...' + addr.slice(-4),
+            gasTransfers: stats.count,
+            totalAmount: Math.round(stats.total * 1000) / 1000,
+            confidence: (stats.count >= 5 ? 'high' : stats.count >= 3 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+            reason: `${stats.count} gas transfers - ${stats.count >= 5 ? 'likely secondary wallet' : 'possible related address'}`
+        }))
+        .sort((a, b) => b.gasTransfers - a.gasTransfers)
+        .slice(0, 10);
+
     return {
         exposureScore,
         scoreBreakdown,
@@ -687,6 +764,10 @@ async function analyzeWallet(address: string, apiKey: string) {
             solscan: `https://solscan.io/account/${address}`,
         },
         recentTxSummary,
+        // New enhanced features
+        defiPositions,
+        topLosses,
+        relatedAddresses,
         // Debug info - remove after fixing
         _debug: {
             txCount: transactions.length,

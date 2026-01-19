@@ -35,6 +35,27 @@ export interface ExternalLinks {
   solscan: string;
 }
 
+export interface DeFiPosition {
+  protocol: string;
+  type: string;
+  interactions: number;
+  lastActivity: string;
+}
+
+export interface LossItem {
+  protocol: string;
+  type: string;
+  estimatedLoss: number;
+}
+
+export interface RelatedAddress {
+  address: string;
+  gasTransfers: number;
+  totalAmount: number;
+  confidence: 'high' | 'medium' | 'low';
+  reason: string;
+}
+
 export interface ExposureData {
   exposureScore: number;
   scoreBreakdown: ScoreBreakdown;
@@ -48,4 +69,8 @@ export interface ExposureData {
   twitterHandles: string[];
   links: ExternalLinks;
   recentTxSummary: TransactionSummary[];
+  // New enhanced features
+  defiPositions?: DeFiPosition[];
+  topLosses?: LossItem[];
+  relatedAddresses?: RelatedAddress[];
 }
