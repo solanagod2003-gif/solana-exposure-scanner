@@ -40,6 +40,10 @@ const fetchWalletExposure = async (address: string): Promise<ExposureData> => {
       solscan: `https://solscan.io/account/${address}`,
     },
     recentTxSummary: data.recentTxSummary ?? [],
+    // New enhanced features
+    defiPositions: data.defiPositions ?? [],
+    topLosses: data.topLosses ?? [],
+    relatedAddresses: data.relatedAddresses ?? [],
   };
 };
 

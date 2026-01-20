@@ -117,7 +117,7 @@ interface CacheEntry<T> {
     version: number;
 }
 
-const CACHE_VERSION = 2; // Increment this to invalidate all old cache entries
+const CACHE_VERSION = 3; // Increment this to invalidate all old cache entries
 const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 const scanCache = new Map<string, CacheEntry<any>>();
 const apiCallStats = { helius: 0, birdeye: 0, cached: 0 };
