@@ -117,7 +117,7 @@ interface CacheEntry<T> {
     version: number;
 }
 
-const CACHE_VERSION = 3; // Increment this to invalidate all old cache entries
+const CACHE_VERSION = 4; // Increment this to invalidate all old cache entries
 const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 const scanCache = new Map<string, CacheEntry<any>>();
 const apiCallStats = { helius: 0, birdeye: 0, cached: 0 };
@@ -691,13 +691,51 @@ async function analyzeWallet(address: string, apiKey: string) {
                 });
             }
         }
+
+        // Also check source and description for protocol names
+        const source = (tx.source || '').toLowerCase();
+        const desc = (tx.description || '').toLowerCase();
+        const combined = source + ' ' + desc;
+
+        const protocolPatterns: Array<{ pattern: string; name: string; type: string }> = [
+            { pattern: 'jupiter', name: 'Jupiter', type: 'DEX' },
+            { pattern: 'raydium', name: 'Raydium', type: 'DEX' },
+            { pattern: 'orca', name: 'Orca', type: 'DEX' },
+            { pattern: 'marinade', name: 'Marinade', type: 'Staking' },
+            { pattern: 'solend', name: 'Solend', type: 'Lending' },
+            { pattern: 'kamino', name: 'Kamino', type: 'Lending' },
+            { pattern: 'drift', name: 'Drift', type: 'Perps' },
+            { pattern: 'meteora', name: 'Meteora', type: 'DEX' },
+            { pattern: 'phoenix', name: 'Phoenix', type: 'DEX' },
+        ];
+
+        for (const { pattern, name, type } of protocolPatterns) {
+            if (combined.includes(pattern)) {
+                const existing = protocolActivity.get(name) || { count: 0, lastTimestamp: 0 };
+                protocolActivity.set(name, {
+                    count: existing.count + 1,
+                    lastTimestamp: Math.max(existing.lastTimestamp, tx.timestamp || 0)
+                });
+            }
+        }
     }
 
     const defiPositions = Array.from(protocolActivity.entries()).map(([protocol, data]) => {
-        const info = Object.values(DEFI_PROTOCOLS).find(p => p.name === protocol)!;
+        // Try to find type from DEFI_PROTOCOLS, otherwise infer from protocol name
+        const info = Object.values(DEFI_PROTOCOLS).find(p => p.name === protocol);
+        let type = info?.type || 'DeFi';
+
+        // Infer type if not found
+        if (!info) {
+            if (['Jupiter', 'Raydium', 'Orca', 'Meteora', 'Phoenix'].includes(protocol)) type = 'DEX';
+            else if (['Marinade'].includes(protocol)) type = 'Staking';
+            else if (['Solend', 'Kamino'].includes(protocol)) type = 'Lending';
+            else if (['Drift'].includes(protocol)) type = 'Perps';
+        }
+
         return {
             protocol,
-            type: info.type,
+            type,
             interactions: data.count,
             lastActivity: data.lastTimestamp > 0 ? new Date(data.lastTimestamp * 1000).toISOString().split('T')[0] : 'Unknown'
         };
